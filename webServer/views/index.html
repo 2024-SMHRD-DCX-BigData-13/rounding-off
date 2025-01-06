@@ -6,14 +6,6 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>{{ data['title'] }}</h1>
-    
-    {% if data['user'].is_authenticated %}
-        <p>Welcome, {{ data['user'].username }}!</p>
-        <a href="/logout">Logout</a>
-    {% else %}
-        <p>You are not logged in.</p>
-        <a href="/login">Login</a>
-    {% endif %}
+
 </body>
 </html>
