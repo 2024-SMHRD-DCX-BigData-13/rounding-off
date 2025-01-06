@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주식 추천 및 자동매매 플랫폼</title>
+  <link rel="stylesheet" href="../static/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+  <!-- 헤더 -->
+  <header>
+    <div class="logo">
+      <h1><b>StockPro</b></h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="#recommend">종목추천</a></li>
+        <li><a href="#news">뉴스</a></li>
+        <li><a href="#favorites">관심종목</a></li>
+        <li><button type="button" class="btn btn-primary" id="loginButton">로그인</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Section -->
+  <main>
+    <section class="intro">
+      <div class="image-content">
+        <img src="../static/img/3.jpg" alt="주식 대시보드 이미지">
+        <div class="text-bg-primary p-3 temp">
+          <h2>투자의 길, 혼자가 아닙니다. 🙌</h2>
+          <h1>AI로 분석한 추천 종목으로 한 발 앞선 투자를 시작하세요!</h1>
+          <p> 📈 최신 시장 데이터를 기반으로 신뢰할 수 있는 주식 추천!
+            💡 초보부터 전문가까지, 누구나 쉽게 사용할 수 있는 플랫폼.
+            지금 바로 투자 여정을 시작해보세요!</p>
+        </div>
+      </div>
+    </section>
+    
+    <section id="recommend-section" class="details">
+      <div class="col-lg-6">
+        <h2>종목추천</h2>
+         <div class="table-container">
+           <table class="recommend-table">
+            <thead>
+              <tr>
+               <th><b>종목명</b></th>
+               <th>현재가</th>
+               <th>변동</th>
+              </tr>
+            </thead>
+              <tbody>
+      <!-- 기존 5개 종목 -->
+                  <tr>
+                  <td>삼성전자</td>
+                  <td>70,000원</td>
+                  <td class="positive">+1,200 (1.74%)</td>
+          
+                  </tr>
+                  <tr>
+                    <td>카카오</td>
+                    <td>56,000원</td>
+                    <td class="negative">-500 (-0.89%)</td>
+                  </tr>
+                  <tr>
+                    <td>SK하이닉스</td>
+                    <td>120,000원</td>
+                    <td class="positive">+3,000 (2.56%)</td>
+                  </tr>
+                  <tr>
+                    <td>LG화학</td>
+                    <td>540,000원</td>
+                    <td class="positive">+6,000 (1.12%)</td>
+                  </tr>
+                  <tr>
+                    <td>POSCO홀딩스</td>
+                    <td>407,000원</td>
+                    <td class="negative">-2,500 (-0.61%)</td>
+                  </tr>
+
+        <!-- 추가된 5개 종목 -->
+                  <tr>
+                    <td>현대차</td>
+                    <td>180,000원</td>
+                    <td class="positive">+2,000 (1.12%)</td>
+                  </tr>
+                  <tr>
+                    <td>기아</td>
+                    <td>78,500원</td>
+                    <td class="positive">+1,100 (1.42%)</td>
+                  </tr>
+                  <tr>
+                    <td>삼성SDI</td>
+                    <td>630,000원</td>
+                    <td class="negative">-5,000 (-0.79%)</td>
+                  </tr>
+                  <tr>
+                    <td>네이버</td>
+                    <td>198,000원</td>
+                    <td class="positive">+4,000 (2.06%)</td>
+                  </tr>
+                  <tr>
+                    <td>LG에너지솔루션</td>
+                    <td>530,000원</td>
+                    <td class="negative">-3,500 (-0.66%)</td>
+                  </tr>
+              </tbody>
+  </table>
+</div>
+
+      </div>
+    
+    
+    
+     <div class="col-lg-6">
+      <h2><b>뉴스</b></h2>
+  <ul class="news-container">
+    <!-- 뉴스 항목 1 -->
+    <li class="news-item">
+      <img src="../static/img/i1.jpg" alt="뉴스 이미지 1">
+      <div class="news-content">
+        <h3 class="news-title">토스뱅크, 삼성증권과 '연금 준비하기' 개시</h3>
+        <p class="news-description">토스뱅크가 고객들의 연금 운용에 필요한 자문과 관리 서비스를 내놨다. 삼성증권과 함께 협업하여...</p>
+        <p class="news-source">디지털타임스</p>
+      </div>
+    </li>
+
+    <!-- 뉴스 항목 2 -->
+    <li class="news-item">
+      <img src="../static/img/i2.jpg" alt="뉴스 이미지 2">
+      <div class="news-content">
+        <h3 class="news-title">"TV가 더 똑똑해졌다"...AI로 초개인화된 TV 공개(CES 2025)</h3>
+        <p class="news-description">삼성 비전 AI 기술 '웰로스', 사용자 패턴 분석부터 케어 기능까지 '거거익선' 트렌드를 선도...</p>
+        <p class="news-source">연합뉴스</p>
+      </div>
+    </li>
+
+    <!-- 뉴스 항목 3 -->
+    <li class="news-item">
+      <img src="../static/img/i3.jpg" alt="뉴스 이미지 3">
+      <div class="news-content">
+        <h3 class="news-title">삼성바이오로직스, 2025 JP모건 헬스케어 콘퍼런스 참가</h3>
+        <p class="news-description">삼성바이오로직스는 내년 세계 최대 제약·바이오 투자 콘퍼런스인 '2025 JP모건 헬스케어'에 참가한다고 밝혔다...</p>
+        <p class="news-source">디지털타임스</p>
+      </div>
+    </li>
+
+    <!-- 뉴스 항목 4 -->
+    <li class="news-item">
+      <img src="../static/img/i4.jpg" alt="뉴스 이미지 4">
+      <div class="news-content">
+        <h3 class="news-title">뱅크런! 새마을금고, 경영 혁신 방안 공포</h3>
+        <p class="news-description">중앙회장 임기 4년 단축 법령 공포, 출자금 상환률을 50~80%로 제한하며 예금 안전성을 강화...</p>
+        <p class="news-source">중앙일보</p>
+      </div>
+    </li>
+
+    <!-- 뉴스 항목 5 -->
+    <li class="news-item">
+      <img src="../static/img/i5.png" alt="뉴스 이미지 5">
+      <div class="news-content">
+        <h3 class="news-title">디스프레, 새해 웰빙 산업 5대 키워드 제시</h3>
+        <p class="news-description">웰빙 컨설팅 기업 디스프레가 2025년 웰빙 산업 트렌드를 제시하며 미래의 전망을 발표...</p>
+        <p class="news-source">지디넷코리아</p>
+      </div>
+    </li>
+  </ul>
+     </div>
+    </section>
+    
+    <section id="favorites">
+      <h2><b>관심종목</b></h2>
+      <div class="card-container">
+        <div class="card">
+          <p class="title">삼성전자</p>
+          <p class="value">69,800원</p>
+          <p class="change positive">+1,200 (1.75%)</p>
+        </div>
+        <div class="card">
+          <p class="title">LG에너지솔루션</p>
+          <p class="value">510,000원</p>
+          <p class="change positive">+5,000 (0.99%)</p>
+        </div>
+        <div class="card">
+          <p class="title">SK하이닉스</p>
+          <p class="value">120,500원</p>
+          <p class="change positive">+2,000 (1.69%)</p>
+        </div>
+        <div class="card">
+          <p class="title">삼성바이오로직스</p>
+          <p class="value">785,000원</p>
+          <p class="change negative">-3,000 (-0.38%)</p>
+        </div>
+        <div class="card">
+          <p class="title">현대차</p>
+          <p class="value">195,000원</p>
+          <p class="change positive">+1,500 (0.77%)</p>
+        </div>
+      </div>
+      
+    </section>
+    
+
+    <section id="auto-trading">
+      <h2><b>자동매매 설정</b></h2>
+      <form id="trading-form">
+        <label for="stock-name">종목 이름:</label>
+        <input type="text" id="stock-name" name="stock-name">
+        <label for="target-price">목표가:</label>
+        <input type="number" id="target-price" name="target-price">
+        <button type="submit">설정 저장</button>
+      </form>
+    </section>
+  </main>
+  </main>
+
+  <!-- 푸터 -->
+  <footer>
+    <p>&copy; 2025 StockPro. All rights reserved.</p>
+  </footer>
+
+  <script src="../static/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

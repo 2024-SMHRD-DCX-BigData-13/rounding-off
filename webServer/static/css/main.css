@@ -1,0 +1,402 @@
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #333;
+    --background-light: #f8f9fa;
+    --border-color: #ddd;
+    --text-color: #333;
+  }
+  
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: var(--text-color);
+  }
+  
+  /* Header 스타일 */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--background-light);
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  header .logo h1 {
+    margin: 0;
+    font-size: 3em;
+    background: linear-gradient(90deg, #000000, #FF69B4); /* 블랙에서 핑크로 그라데이션 */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 15px;
+  }
+  
+  header nav ul li {
+    position: relative; /* 드롭다운 메뉴 대비 */
+  }
+  
+  header nav ul li a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-size: 1em;
+    padding: 5px 10px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  header nav ul li a:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 5px;
+  }
+  
+  header nav ul li a#login {
+    font-weight: bold;
+    border: 1px solid var(--primary-color);
+    padding: 5px 15px;
+    border-radius: 5px;
+    background-color: #fff;
+  }
+  
+  header nav ul li a#login:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+  
+
+  /* 메인 소개 섹션 */
+  .intro {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    background-color: #e9ecef;
+  }
+  
+  .intro .text-content {
+    max-width: 50%;
+  }
+  
+  .intro .text-content h1 {
+    font-size: 2em;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+  }
+  
+  .intro .text-content p {
+    margin: 10px 0;
+  }
+  
+  .intro .image-content img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* 세부 설명 섹션 */
+  .details {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 20px;
+    background-color: var(--background-light);
+  }
+  
+  .details .left h3 {
+    font-size: 1.5em;
+  }
+  
+  .details .right p {
+    max-width: 70%;
+  }
+  
+  .details button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+
+  div.text-bg-primary.p-3.temp {
+    background: linear-gradient(90deg, #000000, #FF69B4); /* 블랙에서 핑크로 그라데이션 */
+    color: white; /* 텍스트는 가독성을 위해 흰색 */
+    border-radius: 8px; /* 부드러운 모서리 */
+    padding: 16px;
+    text-align: center; /* 텍스트 정렬 */
+  }
+  
+  /* 대시보드 및 기타 섹션 */
+  section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  /* h2 태그 스타일 */
+ .details h2 {
+    font-size: 35px;
+    color: #000; /* 검은색 */
+    font-weight: bold; /* 볼드체 */
+    padding: 15px;
+  }
+  
+
+  /* 부모 컨테이너 설정 */
+.details .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 20px 0;
+  }
+  
+  /* 종목추천과 뉴스 열 */
+  .details .col-lg-6 {
+    flex: 0 0 calc(50% - 10px); /* 50% 너비 */
+    max-width: calc(50% - 10px);
+    margin-bottom: 20px;
+    padding-left: 40px;
+  }
+  
+  .details .col-lg-6 h2 {
+    margin-bottom: 20px;
+  }
+  .details .col-lg-6:last-child {
+  margin-left: 20px; /* 왼쪽 여백 추가 (안으로 들어오게 조정) */
+  padding-top: 5px; /* 종목추천과 맞추기 위해 여백 추가 */
+ }
+  
+  /* 종목추천 표 스타일 */
+
+
+.recommend-table {
+    max-width: 800px;
+    width: 100%;
+    border-collapse: collapse; /* 테이블 셀 경계선 제거 */
+    overflow: hidden; /* 테이블 내용 넘침 방지 */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* 테이블 그림자 */
+    text-align: center; /* 텍스트 가운데 정렬 */
+  }
+  
+  .recommend-table th,
+  .recommend-table td {
+    padding: 15px; /* 셀 내부 간격 */
+    background-color: rgba(255, 255, 255, 0.2); /* 셀 배경 */
+    color: #000; /* 텍스트를 검은색으로 설정 */
+  }
+  
+  .recommend-table th {
+    background-color: #55608f; /* 헤더 배경색 */
+    color: #ffffff; /* 헤더 텍스트 흰색 */
+    text-align: center;
+  }
+  
+  .recommend-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.3); /* Hover 시 행 배경색 */
+  }
+  
+  .positive {
+    color: #5dbb63 !important;  /* 초록색 */
+    font-weight: bold; /* 볼드체 */
+  }
+  
+  .negative {
+    color: #e57373 !important; /* 빨간색 */
+    font-weight: bold; /* 볼드체 */
+  }
+  
+  
+  
+  /* ================= 뉴스 리스트 스타일 ================= */
+#news-list {
+    padding: 20px;
+  }
+  
+  #news-list h2 {
+    font-size: 1.8em;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+  }
+  
+  .news-container {
+    list-style: none; /* 불릿 제거 */
+    max-width: 800px;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .news-item {
+    display: flex; /* Flexbox로 이미지와 텍스트를 나란히 배치 */
+    align-items: flex-start; /* 상단 정렬 */
+    gap: 15px; /* 이미지와 텍스트 간 간격 */
+    margin-bottom: 20px; /* 항목 간 간격 */
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .news-item img {
+    width: 100px; /* 이미지 고정 크기 */
+    height: 100px; /* 이미지 고정 크기 */
+    border-radius: 8px; /* 둥근 모서리 */
+    object-fit: cover; /* 이미지 비율 유지 */
+  }
+  
+  .news-content {
+    flex: 1; /* 텍스트 컨텐츠가 남은 공간을 채우도록 설정 */
+  }
+  
+  .news-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0 0 10px;
+  }
+  
+  .news-description {
+    font-size: 0.95em;
+    color: #666666;
+    margin: 0 0 5px;
+  }
+  
+  .news-source {
+    font-size: 0.85em;
+    color: #007bff; /* 출처 색상 */
+  }
+  
+  
+  /* 관심종목이랑 자동매매*/
+
+/* 관심종목안 박스 */
+.card-section {
+    margin-bottom: 40px;
+  }
+  
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .card {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 20px;
+    width: calc(20% - 15px); /* 카드 크기 계산 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    color: #ffffff;
+  }
+  
+  .card p {
+    margin: 0;
+  }
+  
+  .card .title {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  
+  .card .value {
+    font-size: 1.4em;
+    margin-bottom: 10px;
+  }
+  
+  .card .change {
+    font-size: 1em;
+  }
+  
+  .card .change.positive {
+    color: #4caf50; /* 상승 시 초록색 */
+  }
+  
+  .card .change.negative {
+    color: #f44336; /* 하락 시 빨간색 */
+  }
+
+  #favorites h2,
+  #auto-trading h2 {
+    font-size: 35px;
+    color: #000; /* 검은색 */
+    font-weight: bold; /* 볼드체 */
+    padding: 15px;
+  }
+  
+  #favorites ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  #favorites ul li {
+    margin-bottom: 10px;
+  }
+  
+  #trading-form label {
+    display: block;
+    margin-top: 10px;
+  }
+  
+  #trading-form input {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+  }
+  
+  #trading-form button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  /* 푸터 */
+  footer {
+    text-align: center;
+    padding: 10px;
+    background-color: var(--background-light);
+    border-top: 1px solid var(--border-color);
+  }
+  
+  /* 반응형 대응 */
+  @media (max-width: 768px) {
+    .intro {
+      flex-direction: column;
+    }
+  
+    .intro .text-content {
+      max-width: 100%;
+      text-align: center;
+    }
+  
+    .details {
+      flex-direction: column;
+    }
+  
+    .details .right p {
+      max-width: 100%;
+    }
+  
+    header nav ul {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+
+
+
+  
+
