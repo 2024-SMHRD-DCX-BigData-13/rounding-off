@@ -1,0 +1,98 @@
+:root {
+  --background-color: #18181B; /* 메인 배경색 */
+  --card-background: #202124; /* 카드 섹션 배경 */
+  --border-color: #3A3B3D; /* 경계선 */
+  --text-color: #E4E4E7; /* 기본 텍스트 (밝은 회색) */
+  --highlight-color: #FFFFFF; /* 강조 텍스트 */
+  --primary-color: #007bff; /* 주요 색상 */
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+/* 헤더 스타일 */
+.custom-header {
+  background-color: var(--card-background);
+  padding: 20px 0;
+  height: 97px;
+  border-bottom: 1px solid var(--border-color);
+  
+}
+
+.logo {
+  font-size: 2.5em;
+  color: var(--highlight-color);
+  background: linear-gradient(90deg, #ff69b4, #ffffff); /* 핑크에서 흰색으로 그라데이션 */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+nav ul li {
+  list-style: none;
+}
+
+/* 메인 콘텐츠 */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.login-card {
+  background-color: var(--card-background);
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-title {
+  font-size: 1.8em;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.form-group input::placeholder {
+  color: #aaa;
+}
+
+/* 링크 스타일 */
+.login-links a {
+  text-decoration: none;
+}
+
+.login-links a:hover {
+  color: var(--primary-color);
+}
+
+/* 푸터 스타일 */
+.custom-footer {
+  background-color: var(--card-background);
+  padding: 15px 0;
+  color: var(--text-color);
+  border-top: 1px solid var(--border-color);
+}
