@@ -1,0 +1,128 @@
+:root {
+    --background-color: #18181B; /* 메인 배경색 */
+    --card-background: #202124; /* 카드 섹션 배경 */
+    --border-color: #3A3B3D; /* 경계선 */
+    --text-color: #E4E4E7; /* 기본 텍스트 (밝은 회색) */
+    --highlight-color: #FFFFFF; /* 강조 텍스트 */
+    --primary-color: #007bff; /* 주요 색상 */
+}
+
+html, body {
+    height: 100%; /* 전체 높이를 화면 크기로 설정 */
+    margin: 0;
+    padding: 0;
+    font-family: 'Noto Sans KR', sans-serif; /* 기본 폰트 */
+    background-color: var(--background-color); /* 배경색 */
+    color: var(--text-color); /* 기본 텍스트 색상 */
+    display: flex; /* 전체 레이아웃 Flexbox */
+    flex-direction: column; /* 위에서 아래로 정렬 */
+}
+
+/* 헤더 스타일 */
+.custom-header {
+    background-color: var(--card-background);
+    padding: 20px 0;
+    height: 97px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    font-size: 2.5em;
+    background: linear-gradient(90deg, #ff69b4, #8f2db6, #6f9cfc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 회원가입 컨테이너 */
+.signup-container {
+    background-color: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1; /* 남은 공간을 채움 */
+}
+
+/* 회원가입 카드 */
+.signup-card {
+    background-color: var(--card-background); /* 카드 섹션 배경 */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* 그림자 효과 */
+    width: 100%;
+    max-width: 400px;
+    background-color: #202124 !important;
+}
+
+/* 제목 스타일 */
+.signup-title {
+    font-size: 1.8em;
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--highlight-color); /* 강조 텍스트 */
+}
+
+/* 입력 필드 스타일 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.form-group input {
+    background-color: #1E1E22; /* 약간 밝은 다크톤 */
+    color: var(--text-color); /* 텍스트 기본 색상 */
+    border: 1px solid #3A3B3D; /* 경계선 색상 */
+    padding: 10px;
+    border-radius: 5px;
+    width: 100%; /* 입력 필드 너비 100% */
+}
+
+.form-group input::placeholder {
+    color: #aaa; /* 플레이스홀더 색상 */
+}
+
+/* 버튼 스타일 */
+.signup-button {
+    padding: 10px;
+    background-color: var(--primary-color); /* 주요 색상 */
+    color: var(--highlight-color);
+    border: none;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+}
+
+.signup-button:hover {
+    background-color: #0056b3; /* 버튼 호버 색상 */
+}
+
+/* 링크 스타일 */
+.signup-links a {
+    text-decoration: none;
+    color: var(--primary-color);
+    display: block;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.signup-links a:hover {
+    color: var(--highlight-color); /* 강조 텍스트 색상 */
+}
+
+/* 푸터 스타일 */
+.custom-footer {
+    background-color: var(--card-background);
+    padding: 15px 0;
+    color: var(--text-color);
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    margin-top: auto; /* Flexbox를 활용한 하단 고정 */
+}

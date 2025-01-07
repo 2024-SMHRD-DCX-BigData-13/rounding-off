@@ -7,12 +7,15 @@
   --primary-color: #007bff; /* 주요 색상 */
 }
 
-body {
-  font-family: 'Noto Sans KR', sans-serif;
+html, body {
+  height: 100%; /* 전체 높이를 화면 크기로 설정 */
   margin: 0;
   padding: 0;
-  background-color: var(--background-color);
-  color: var(--text-color);
+  font-family: 'Noto Sans KR', sans-serif; /* 기본 폰트 */
+  background-color: var(--background-color); /* 배경색 */
+  color: var(--text-color); /* 기본 텍스트 색상 */
+  display: flex; /* 전체 레이아웃 Flexbox */
+  flex-direction: column; /* 위에서 아래로 정렬 */
 }
 
 /* 헤더 스타일 */
@@ -21,27 +24,23 @@ body {
   padding: 20px 0;
   height: 97px;
   border-bottom: 1px solid var(--border-color);
-  
 }
 
 .logo {
   font-size: 2.5em;
-  color: var(--highlight-color);
-  background: linear-gradient(90deg, #ff69b4, #ffffff); /* 핑크에서 흰색으로 그라데이션 */
+  background: linear-gradient(90deg, #ff69b4, #8f2db6, #6f9cfc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-nav ul li {
-  list-style: none;
-}
 
 /* 메인 콘텐츠 */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  flex: 1; /* 남은 공간을 채움 */
+  
 }
 
 .login-card {
@@ -65,14 +64,15 @@ nav ul li {
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 5px; /* 적정한 간격 설정 */
 }
 
 .form-group input {
+  width: 100%;
+  padding: 10px;
   background-color: var(--background-color);
   color: var(--text-color);
   border: 1px solid var(--border-color);
-  padding: 10px;
   border-radius: 5px;
 }
 
@@ -82,7 +82,10 @@ nav ul li {
 
 /* 링크 스타일 */
 .login-links a {
+  display: block; /* 줄바꿈으로 나란히 표시 */
   text-decoration: none;
+  color: var(--text-color); /* 기본 텍스트 색상 */
+  margin-top: 15px;
 }
 
 .login-links a:hover {
@@ -95,4 +98,5 @@ nav ul li {
   padding: 15px 0;
   color: var(--text-color);
   border-top: 1px solid var(--border-color);
+  text-align: center;
 }

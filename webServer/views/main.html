@@ -12,10 +12,12 @@
   <header class="custom-header">
     <div class="container d-flex justify-content-between align-items-center">
       <h1 class="logo"><b>StockPro</b></h1>
-    
+      <form class="d-flex" role="search">
+        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-light" type="submit">Search</button>
+      </form>
       <nav>
         <ul>
-          <li><button type="button" class="btn btn-outline-light">종목추천</button></li>
           <li><button type="button" class="btn btn-outline-light">뉴스</button></li>
           <li><button type="button" class="btn btn-outline-light">관심종목</button></li>
           <li><button type="button" class="btn btn-primary" id="loginButton">로그인</button></li>
@@ -219,7 +221,7 @@
   <!-- 푸터 -->
   <footer class="custom-footer">
     <div class="container text-center">
-      <p>&copy; 2025 StockPro. All rights reserved.ROUNDING-OFF</p>
+      <p>&copy; 2025 StockPro. All rights reserved. ROUNDING-OFF</p>
     </div>
   </footer>
 
