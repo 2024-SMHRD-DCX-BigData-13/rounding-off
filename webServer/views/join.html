@@ -19,11 +19,11 @@
   <main class="signup-container d-flex justify-content-center align-items-center">
     <div class="signup-card rounded shadow" style="max-width: 400px; width: 100%;">
       <h2 class="text-center mb-4">회원가입</h2>
-      <form>
+      <form action="/register" method="POST">
         <!-- 이름 입력 -->
         <div class="form-group mb-3">
           <label for="name" class="form-label">이름</label>
-          <input type="text" id="name" name="name" class="form-control" placeholder="이름을 입력하세요" required>
+          <input type="text" id="name" name="username" class="form-control" placeholder="이름을 입력하세요" required>
         </div>
 
         <!-- 이메일 입력 -->
