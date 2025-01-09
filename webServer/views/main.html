@@ -15,25 +15,19 @@
     <header class="custom-header">
       <div class="container d-flex justify-content-between align-items-center">
         <h1 class="logo"><b>StockPro</b></h1>
-        <form class="d-flex" role="search">
+
+        <div class="search-container">
+          <!-- 검색 아이콘 -->
+          <div class="search-icon"></div>
+          <!-- 검색 입력 필드 -->
           <input
-            class="form-control me-2"
-            type="search"
-            placeholder="Search"
-            aria-label="Search"
+            class="search-input"
+            type="text"
+            placeholder="Enter를 눌러 검색하세요"
           />
-          <button class="btn btn-outline-light" type="submit">Search</button>
-        </form>
+        </div>
         <nav>
           <ul>
-            <li>
-              <button type="button" class="btn btn-outline-light">뉴스</button>
-            </li>
-            <li>
-              <button type="button" class="btn btn-outline-light">
-                관심종목
-              </button>
-            </li>
             <li>
               <button type="button" class="btn btn-primary" id="loginButton">
                 로그인
