@@ -28,7 +28,6 @@
     justify-content: space-between; /* 로고와 버튼 그룹 양쪽 정렬 */
     align-items: center; /* 세로 중앙 정렬 */
     overflow: visible; /* 숨겨지는 요소 방지 */
-    
   }
   /* 로고 스타일 */
   .logo {
@@ -37,6 +36,7 @@
     background: linear-gradient(90deg, #ff69b4, #8f2db6,#6f9cfc); /* 핑크에서 흰색 그라데이션 */
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    cursor: pointer;
   }
   
   /* 버튼 그룹 */
