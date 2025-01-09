@@ -67,11 +67,6 @@ nav ul li button {
   transition: all 0.3s ease;
 }
 
-nav ul li .btn-outline-light:hover {
-  background-color: var(--primary-color);
-  color: #fff;
-}
-
 nav ul li .btn-primary {
   font-weight: bold;
   background-color: var(--primary-color);
@@ -80,6 +75,10 @@ nav ul li .btn-primary {
 
 nav ul li .btn-primary:hover {
   background-color: #0056b3;
+}
+
+#mypageButton {
+  gap: 15px;
 }
 /* 검색창 컨테이너 스타일 */
 .search-container {
