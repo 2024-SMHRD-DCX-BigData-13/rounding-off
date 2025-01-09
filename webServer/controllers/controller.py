@@ -200,7 +200,7 @@ async def logout(request: Request):
 
 # 회원가입 처리
 @router.post("/register")
-async def register(request: Request, email: str = Form(...), password: str = Form(...), name: str = Form(...)):
+async def register(request: Request, email: str = Form(...), password: str = Form(...), username: str = Form(...)):
     """
     회원가입 처리:
     - 이메일 중복 확인 후 사용자를 데이터베이스에 추가.
@@ -222,8 +222,8 @@ async def register(request: Request, email: str = Form(...), password: str = For
 
         # 사용자 정보 DB에 저장
         cursor.execute(
-            "INSERT INTO users (email, password, name) VALUES (%s, SHA2(%s, 256), %s)",
-            (email, password, name)
+            "INSERT INTO users (email, password, username) VALUES (%s, SHA2(%s, 256), %s)",
+            (email, password, username)
         )
 
         connection.commit()  # 변경 사항 저장
