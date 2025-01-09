@@ -2,6 +2,7 @@ document.getElementById('loginButton').addEventListener('click', () => {
   window.location.href = '/login'; // 로그인 페이지 URL
 });
 
+<<<<<<< HEAD
 // 화면 다크모드(상시)
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 
@@ -17,22 +18,27 @@ document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 //         loginButton.id = 'logoutButton';  // ID를 'logoutButton'으로 변경
 //         document.getElementById('favorites').style.display = 'block';
 //         document.getElementById('auto-trading').style.display = 'block';
+=======
+document.getElementById('loginButton').addEventListener('click', () => {
+  window.location.href = '/login'; // 로그인 페이지 URL
+});
 
-//         logoutButton.addEventListener('click', () => {
-//             fetch('/logout', { method: 'POST' })
-//               .then(() => {
-//                 window.location.href = '/main';
-//               })
-//               .catch(error => console.error('Error:', error));
-//           });
-//         } else {
-//           // 비로그인 상태일 때 버튼 텍스트와 ID 변경
-//           loginButton.textContent = '로그인';
-//           loginButton.id = 'loginButton';  // ID를 'loginButton'으로 변경
-//         }
-//       })
-//       .catch(error => console.error('Error:', error));
-//   });
+document.getElementById('mypageButton').addEventListener('click', () => {
+  window.location.href = '/mypage'; // 마이페이지 페이지 URL
+});
+
+document.getElementById('logoutButton').addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' })
+    .then(() => {
+      window.location.href = '/main';
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+// 화면 다크모드(상시)
+document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
+>>>>>>> b3486326c0bdf6b4f98df720e5dbf4654dd04f69
+
 
 document.addEventListener('DOMContentLoaded', () => {
   // 서버에서 로그인 상태 확인
@@ -44,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('favorites').style.display = 'block';
         document.getElementById('auto-trading').style.display = 'block';
         // document.getElementsByClassName('intro').style.display = 'none';
+<<<<<<< HEAD
         // 기존 로그인 버튼 제거
         const loginButton = document.getElementById('loginButton');
         if (loginButton) {
@@ -80,6 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch((error) => console.error('Error:', error));
         });
+=======
+        document.getElementById('loginButton').style.display = 'none';
+        document.getElementById('logoutButton').style.display = 'block';
+        document.getElementById('mypageButton').style.display = 'block';
+
+>>>>>>> b3486326c0bdf6b4f98df720e5dbf4654dd04f69
       }
     })
     .catch((error) => console.error('Error:', error));

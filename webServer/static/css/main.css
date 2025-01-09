@@ -77,8 +77,18 @@ nav ul li .btn-primary:hover {
   background-color: #0056b3;
 }
 
+<<<<<<< HEAD
 #mypageButton {
   gap: 15px;
+=======
+#mypageButton{
+  display: none;
+
+}
+#logoutButton{
+  display: none;
+
+>>>>>>> b3486326c0bdf6b4f98df720e5dbf4654dd04f69
 }
 /* 검색창 컨테이너 스타일 */
 .search-container {
