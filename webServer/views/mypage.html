@@ -1,21 +1,99 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그인 페이지</title>
+    <link rel="stylesheet" href="../static/css/mypage.css" />
+    <!-- 커스텀 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <!-- Bootstrap -->
   </head>
-  <body>
-    <h1>Hello, world!</h1>
-    <h4>회원정보 수정</h4> <!-- 이메일은 불러와서  + 커뮤 만들거면 닉네임 추가
-                            비번 변경 가능
-                            폰번호 추가(DB)
-                            생성날짜
-                            -->
-    <h4>관심종목선택지</h4> <!-- 관종선택 -->
-    <h4></h4>
-    <h4></h4>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <body class="bg-dark text-white">
+    <!-- 헤더 -->
+    <header class="custom-header">
+      <div class="container d-flex justify-content-between align-items-center">
+        <h1 class="logo"><b id="logo">StockPro</b></h1>
+      </div>
+    </header>
+
+    <div class="mypage-container">
+      <!-- 왼쪽 메뉴 -->
+      <aside class="sidebar">
+        <h2>마이페이지</h2>
+        <ul class="menu">
+          <li><a href="#profile">프로필 관리</a></li>
+          <li><a href="#portfolio">투자 현황</a></li>
+          <li><a href="#holdings">보유 종목</a></li>
+          <li><a href="#transactions">거래 내역</a></li>
+          <li><a href="#watchlist">관심 종목</a></li>
+          <li><a href="#settings">계정 설정</a></li>
+          <li><a href="#logout">로그아웃</a></li>
+        </ul>
+      </aside>
+
+      <!-- 오른쪽 콘텐츠 -->
+      <main class="content">
+        <!-- 프로필 관리 -->
+        <section id="profile">
+          <h1>프로필 관리</h1>
+          <p>사용자 정보와 계정을 관리할 수 있습니다.</p>
+        </section>
+
+        <!-- 투자 현황 -->
+        <section id="portfolio">
+          <h1>투자 현황</h1>
+          <div class="portfolio-summary">
+            <p><strong>총 투자 금액:</strong> 5,000,000원</p>
+            <p><strong>총 수익률:</strong> +12.5%</p>
+          </div>
+        </section>
+
+        <!-- 보유 종목 -->
+        <section id="holdings">
+          <h1>보유 종목</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>종목명</th>
+                <th>보유 수량</th>
+                <th>평단가</th>
+                <th>현재가</th>
+                <th>평가 손익</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>삼성전자</td>
+                <td>100주</td>
+                <td>60,000원</td>
+                <td>65,000원</td>
+                <td>+500,000원</td>
+              </tr>
+              <tr>
+                <td>LG에너지솔루션</td>
+                <td>50주</td>
+                <td>400,000원</td>
+                <td>390,000원</td>
+                <td>-500,000원</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="custom-footer">
+      <div class="container text-center">
+        <p>&copy; 2025 StockPro. All rights reserved. ROUNDING-OFF</p>
+      </div>
+    </footer>
+    <form action=""></form>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/js/mypage.js"></script>
   </body>
 </html>
