@@ -11,12 +11,11 @@ document.getElementById('logoutButton').addEventListener('click', () => {
     .then(() => {
       window.location.href = '/main';
     })
-    .catch(error => console.error('Error:', error));
+    .catch((error) => console.error('Error:', error));
 });
 
 // 화면 다크모드(상시)
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
-
 
 document.addEventListener('DOMContentLoaded', () => {
   // 서버에서 로그인 상태 확인
@@ -31,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginButton').style.display = 'none';
         document.getElementById('logoutButton').style.display = 'block';
         document.getElementById('mypageButton').style.display = 'block';
-
       }
     })
     .catch((error) => console.error('Error:', error));
