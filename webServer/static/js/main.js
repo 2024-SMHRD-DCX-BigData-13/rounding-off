@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginButton').style.display = 'none';
         document.getElementById('logoutButton').style.display = 'block';
         document.getElementById('mypageButton').style.display = 'block';
+        document.getElementById('image-content').style.display = "none";
+        document.getElementById('opentext').style.display = 'none';
       }
     })
     .catch((error) => console.error('Error:', error));
