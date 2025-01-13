@@ -146,6 +146,14 @@ async def join_page(request: Request):
     """
     return templates.TemplateResponse("join.html", {"request": request})
 
+# 마이페이지 페이지 엔드포인트트
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """
+    마이페이지 페이지 렌더링.
+    """
+    return templates.TemplateResponse("mypage.html", {"request": request})
+
 @router.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
     """
