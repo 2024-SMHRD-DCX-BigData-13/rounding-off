@@ -32,6 +32,9 @@ pycparser==2.22
 pydantic==2.10.4
 pydantic_core==2.27.2
 pyparsing==3.2.1
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.2
+PyQt5_sip==12.16.1
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
 python-multipart==0.0.20

@@ -34,6 +34,9 @@ body {
   -webkit-text-fill-color: transparent;
   cursor: pointer;
 }
+nav .btn-primary {
+  font-weight: bold;
+}
 
 /* 마이페이지 컨테이너 레이아웃 */
 .mypage-container {
@@ -47,11 +50,14 @@ body {
   background-color: var(--card-background);
   padding: 20px;
   border-right: 1px solid var(--border-color); /* 구분선 */
+  margin-right: 20px;
+  color: #c3c3c6;
+  font-weight: bold;
 }
 
 .sidebar .menu {
   list-style: none;
-  padding: 0;
+  padding: 20px;
   margin: 0;
 }
 
@@ -66,6 +72,7 @@ body {
   color: var(--text-color);
   background-color: var(--card-background);
   transition: background-color 0.3s ease;
+  text-decoration: none !important;
 }
 
 .sidebar .menu li a:hover {
@@ -87,7 +94,6 @@ body {
   padding: 20px;
   border-radius: 8px;
   border: 1px solid var(--border-color); /* 카드 테두리 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 table {
@@ -106,6 +112,271 @@ td {
 th {
   background-color: var(--card-background);
   color: var(--highlight-color);
+}
+
+/* 전체 섹션 레이아웃 */
+#profile-section {
+  display: flex;
+  justify-content: space-between;
+  background-color: transparent;
+  border-radius: 10px;
+  width: 100%;
+  margin: 0 auto;
+  color: #fff;
+  font-family: 'Arial', sans-serif;
+}
+
+/* 좌측 프로필 섹션 */
+.profile-left {
+  width: 48%;
+  padding: 20px;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.profile-left h1 {
+  font-size: 30px;
+  margin-bottom: 30px;
+  color: #c3c3c6;
+}
+
+.profile-info .info-item {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+}
+
+.info-item:last-child {
+  margin-bottom: 100px; /* 원하는 여백 크기 조정 */
+}
+/* 버튼 스타일 */
+.connect-api-button,
+.edit-profile-button {
+  display: block;
+  width: 60%; /* 버튼 너비 */
+  padding: 10px;
+  background-color: #aa629a;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 40px;
+  margin-left: auto; /* 좌우 중앙 정렬 */
+  margin-right: auto;
+  font-weight: bold;
+}
+
+.edit-profile-button {
+  background-color: #5987b9;
+}
+
+.connect-api-button:hover {
+  background-color: #4c164e;
+}
+
+.edit-profile-button:hover {
+  background-color: #0056b3;
+}
+
+/* 계좌 정보 섹션 */
+.profile-right {
+  width: 48%; /* 전체 너비의 48% 차지 */
+  padding: 20px;
+  background-color: #2a2a2a; /* 다크 배경 */
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  color: #e4e4e7; /* 밝은 텍스트 */
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 섹션 제목 */
+.profile-right h1 {
+  font-size: 30px;
+  margin-bottom: 20px;
+  color: #c3c3c6;
+}
+
+/* 계좌 정보 리스트 */
+#account-info ul {
+  list-style: none; /* 불릿 제거 */
+  padding: 0;
+  margin: 0 0 20px 0; /* 그래프와 간격 */
+}
+
+#account-info ul li {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #cfcfcf; /* 밝은 텍스트 */
+}
+
+/* 계좌 정보 블러 처리 */
+.blur {
+  filter: blur(4px); /* 블러 효과 */
+  pointer-events: none; /* 클릭 불가능 */
+  opacity: 0.7; /* 반투명 효과 */
+}
+
+.blur.disabled {
+  filter: none; /* 블러 제거 */
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* 원형 그래프 */
+.profile-right canvas {
+  display: block;
+  margin: 20px auto; /* 중앙 정렬 */
+  max-width: 100%; /* 반응형 */
+  height: 300px; /* 그래프 높이 */
+}
+
+/* 모달 창 기본 스타일 */
+.modal {
+  display: none; /* 기본적으로 숨김 */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.7); /* 더 어두운 반투명 배경 */
+}
+
+/* 모달 컨텐츠 박스 */
+.modal-content {
+  background-color: #2b2b2b; /* 부드러운 다크 배경 */
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 30%;
+  max-width: 400px;
+  color: #cfcfcf; /* 부드러운 흰색 */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* 은은한 그림자 */
+}
+
+/* 모달 제목 스타일 */
+.modal-content h2 {
+  color: #ff7777; /* 부드러운 강조 색상 */
+  margin-bottom: 20px;
+  font-size: 20px;
+  text-align: center;
+}
+
+/* 닫기 버튼 스타일 */
+.close-button {
+  color: #ff7777; /* 강조 색상 */
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  color: #cfcfcf; /* 닫기 버튼 hover 시 부드러운 흰색 */
+}
+
+/* 폼 내부 요소 */
+.modal-content .form-group {
+  margin-bottom: 15px;
+}
+
+.modal-content label {
+  display: block;
+  font-size: 14px;
+  color: #cfcfcf; /* 부드러운 텍스트 색상 */
+  margin-bottom: 5px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #444; /* 은은한 테두리 */
+  border-radius: 5px;
+  background-color: #1e1e1e; /* 어두운 입력 배경 */
+  color: #cfcfcf; /* 텍스트 색상 */
+}
+
+/* 저장 버튼 */
+.modal-content button {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  background-color: #3a85d6; /* 부드러운 파란색 */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.modal-content button:hover {
+  background-color: #3069a5; /* 더 어두운 파란색 */
+}
+
+/* 보유유 종목 섹션 마진 조정 */
+#holdings {
+  margin-top: 30px; /* 상단 마진 추가 */
+  padding-top: 10px; /* 추가 여유 공간 */
+  font-size: 16px;
+  font-weight: bold;
+}
+#holdings h1 {
+  font-size: 30px;
+  font-weight: bold;
+  color: #c3c3c6;
+}
+
+/* 양수(+) 수익 색상 */
+.positive-profit {
+  color: rgb(180, 63, 63);
+  font-weight: bold;
+}
+
+/* 음수(-) 수익 색상 */
+.negative-profit {
+  color: rgb(83, 83, 204);
+  font-weight: bold;
+}
+
+/* 캔버스 */
+/* 투자 현황 섹션 */
+#investment-section {
+  padding: 20px;
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  margin: 20px auto;
+  width: 100%; /* 섹션을 화면 전체로 확장 */
+  color: #cfcfcf;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+#investment-section h1 {
+  font-size: 30px;
+  color: #c3c3c6;
+  margin-bottom: 30px;
+}
+
+#investment-section p {
+  margin: 5px 0;
+  color: #cfcfcf;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* 캔버스 스타일 */
+canvas {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%; /* 부모 요소에 맞춰 반응형 */
+  height: 300px; /* 그래프 높이 조정 */
 }
 
 /* 푸터 스타일 */
