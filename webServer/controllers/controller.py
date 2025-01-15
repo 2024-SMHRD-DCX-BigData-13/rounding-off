@@ -26,7 +26,7 @@ async def main_page(request: Request):
     """
     메인 페이지 렌더링.
     """
-    return templates.TemplateResponse("inin.html", {"request": request})
+    return templates.TemplateResponse("main.html", {"request": request})
 
 
 # 로그인 페이지 엔드포인트
