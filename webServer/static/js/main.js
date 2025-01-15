@@ -1,3 +1,13 @@
+
+const stockInfo = document.getElementsByClassName('stockInfo');
+
+Array.from(stockInfo).forEach((element) => {
+  element.addEventListener('click', () => {
+    window.location.href = '/stockinfo';
+  });
+});
+
+
 document.getElementById('loginButton').addEventListener('click', () => {
   window.location.href = '/login'; // 로그인 페이지 URL
 });
@@ -13,6 +23,7 @@ document.getElementById('logoutButton').addEventListener('click', () => {
     })
     .catch((error) => console.error('Error:', error));
 });
+
 
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 
@@ -34,3 +45,4 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch((error) => console.error('Error:', error));
 });
+
