@@ -2,7 +2,9 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from models.mySql import create_connection, close_connection  # MySQL 연결을 위한 함수
-from models.getKiwoom import ExternalAPI
+from models.getKiwoom import HttpClientModel
+from typing import List
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -138,16 +140,46 @@ async def register(request: Request, email: str = Form(...), password: str = For
         raise HTTPException(status_code=500, detail=f"DB 오류: {str(e)}")
 
 
-@router.get("/get-data")
-async def get_data():
+
+
+client = HttpClientModel(base_url="http://127.0.0.1:8001")  # 다른 서버 URL
+
+class StockRequest(BaseModel):
     """
-    다른 서버로 요청을 보내고 결과를 반환하는 엔드포인트.
+    요청 데이터 모델
     """
-    try:
-        data = await ExternalAPI.fetch_data_from_other_server("send-data")
-        return {"message": "Data fetched successfully", "data": data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    stock_codes: List[str]  # 종목 코드 리스트
+    start_date: str  # 기준일자 (YYYYMMDD)
+
+
+@router.post("/fetch_stock_data")
+def fetch_stock_data(request: StockRequest):
+    """
+    FastAPI 라우터: 주식 데이터를 요청
+    :param request: StockRequest (종목 코드 리스트와 기준일자)
+    :return: 주식 데이터
+    """
+    endpoint = "get_stock_data"
+    results = []
+
+    for stock_code in request.stock_codes:
+        payload = {
+            "stock_code": stock_code,
+            "start_date": request.start_date,
+        }
+
+        try:
+            # 모델을 사용해 POST 요청 보내기
+            response_data = client.post_request(endpoint, payload)
+            results.append({"stock_code": stock_code, "data": response_data})
+        except Exception as e:
+            results.append({"stock_code": stock_code, "error": str(e)})
+
+    return results
+
+
+
+
 
 mock_db = {
     "1@1": {
