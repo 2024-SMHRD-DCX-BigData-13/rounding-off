@@ -3,7 +3,9 @@ const stockInfo = document.getElementsByClassName('stockInfo');
 
 Array.from(stockInfo).forEach((element) => {
   element.addEventListener('click', () => {
-    window.location.href = '/stockinfo';
+    const name = element.id;
+    const kname = encodeURIComponent(name);
+    window.location.href = `/stockinfo?id=${name}`;
   });
 });
 
