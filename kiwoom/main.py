@@ -1,34 +1,35 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from kiwoom_api import KiwoomAPI
-from datetime import datetime, timedelta
+import sys
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QAxContainer import *
 
-app = FastAPI()
+class MyWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PyStock")
+        self.setGeometry(300, 300, 300, 150)
 
-class StockRequest(BaseModel):
-    stock_code: str
-    start_date: str  # "YYYYMMDD" 형식
+        self.kiwoom = QAxWidget("KHOPENAPI.KHOpenAPICtrl.1")
 
+        btn1 = QPushButton("Login", self)
+        btn1.move(20, 20)
+        btn1.clicked.connect(self.btn1_clicked)
 
-@app.post("/get_stock_data")
-def get_stock_data(request: StockRequest):
-    """
-    키움증권 API를 통해 주식 데이터를 가져오는 엔드포인트
-    """
-    try:
-        # 키움 API 객체 생성
-        kiwoom = KiwoomAPI()
+        btn2 = QPushButton("Check state", self)
+        btn2.move(20, 70)
+        btn2.clicked.connect(self.btn2_clicked)
 
-        # 로그인
-        print("키움증권 로그인 중...")
-        kiwoom.login()
+    def btn1_clicked(self):
+        ret = self.kiwoom.dynamicCall("CommConnect()")
 
-        # 데이터 요청
-        print(f"종목 코드: {request.stock_code}, 기준일자: {request.start_date}")
-        data = kiwoom.get_stock_history(request.stock_code, request.start_date)
+    def btn2_clicked(self):
+        if self.kiwoom.dynamicCall("GetConnectState()") == 0:
+            self.statusBar().showMessage("Not connected")
+        else:
+            self.statusBar().showMessage("Connected")
 
-        # JSON 응답 생성
-        return {"stock_code": request.stock_code, "data": data}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    myWindow = MyWindow()
+    myWindow.show()
+    app.exec_()
