@@ -14,7 +14,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # 템플릿 경로 설정 (HTML 파일)
 templates = Jinja2Templates(directory="views")
 
-app.add_middleware(SessionMiddleware, secret_key="your_secret_key")
+app.add_middleware(SessionMiddleware, secret_key="123")
 
 # 컨트롤러 라우터 추가
 app.include_router(controller_router)
