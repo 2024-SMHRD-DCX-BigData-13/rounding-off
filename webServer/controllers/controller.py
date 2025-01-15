@@ -5,6 +5,8 @@ from models.mySql import create_connection, close_connection  # MySQL 연결을 
 from models.getKiwoom import HttpClientModel
 from typing import List
 from pydantic import BaseModel
+import requests
+import time
 
 router = APIRouter()
 
@@ -24,7 +26,8 @@ async def main_page(request: Request):
     """
     메인 페이지 렌더링.
     """
-    return templates.TemplateResponse("main.html", {"request": request})
+    return templates.TemplateResponse("inin.html", {"request": request})
+
 
 # 로그인 페이지 엔드포인트
 @router.get("/login", response_class=HTMLResponse)
@@ -33,6 +36,14 @@ async def login_page(request: Request):
     로그인 페이지 렌더링.
     """
     return templates.TemplateResponse("login.html", {"request": request})
+
+# 로그인 페이지 엔드포인트
+@router.get("/stockinfo", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """
+    로그인 페이지 렌더링.
+    """
+    return templates.TemplateResponse("stockinfo.html", {"request": request})
 
 # 회원가입 페이지 엔드포인트
 @router.get("/join", response_class=HTMLResponse)
@@ -142,43 +153,28 @@ async def register(request: Request, email: str = Form(...), password: str = For
 
 
 
-client = HttpClientModel(base_url="http://127.0.0.1:8001")  # 다른 서버 URL
+client = HttpClientModel(base_url="http://127.0.0.1:8001")  # 키움 API 서버 URL
 
 class StockRequest(BaseModel):
-    """
-    요청 데이터 모델
-    """
-    stock_codes: List[str]  # 종목 코드 리스트
-    start_date: str  # 기준일자 (YYYYMMDD)
+    stock_codes: List[str]
+    start_date: str
 
-
-@router.post("/fetch_stock_data")
+@router.post("/api/fetch_stock_data")
 def fetch_stock_data(request: StockRequest):
-    """
-    FastAPI 라우터: 주식 데이터를 요청
-    :param request: StockRequest (종목 코드 리스트와 기준일자)
-    :return: 주식 데이터
-    """
-    endpoint = "get_stock_data"
     results = []
-
     for stock_code in request.stock_codes:
-        payload = {
-            "stock_code": stock_code,
-            "start_date": request.start_date,
-        }
-
         try:
-            # 모델을 사용해 POST 요청 보내기
-            response_data = client.post_request(endpoint, payload)
-            results.append({"stock_code": stock_code, "data": response_data})
+            print(f"[메인 서버] 요청 보내기 - 종목코드: {stock_code}, 기준일자: {request.start_date}")
+            response = client.post_request(
+                endpoint="get_stock_data",
+                payload={"stock_code": stock_code, "start_date": request.start_date},
+            )
+            print(f"[메인 서버] 응답 받음 - 종목코드: {stock_code}, 데이터: {response}")
+            results.append({"stock_code": stock_code, "data": response})
         except Exception as e:
+            print(f"[메인 서버] 요청 실패 - 종목코드: {stock_code}, 에러: {e}")
             results.append({"stock_code": stock_code, "error": str(e)})
-
-    return results
-
-
-
+    return {"results": results}
 
 
 mock_db = {
