@@ -83,3 +83,14 @@ const stockChart = new Chart(ctx, {
     },
   },
 });
+
+const params = new URLSearchParams(window.location.search);
+const stockId = params.get('id');
+
+if (stockId) {
+  const kname = decodeURIComponent(stockId);
+  const stockInfoElement = document.getElementById('stock-name');
+  if (stockInfoElement) {
+    stockInfoElement.textContent = `${stockId}`;
+  }
+}

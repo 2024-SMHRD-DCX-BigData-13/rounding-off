@@ -572,10 +572,6 @@ div.card {
 a {
   text-decoration: none !important;
 }
-#search-b {
-  display: flex;
-  justify-content: space-around;
-}
 
 #searchButton{
   margin-left: 5px;
