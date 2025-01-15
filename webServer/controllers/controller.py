@@ -2,7 +2,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from models.mySql import create_connection, close_connection  # MySQL 연결을 위한 함수
-from models.getKiwoom import DataFetcher
+from models.getKiwoom import ExternalAPI
 
 router = APIRouter()
 
@@ -138,22 +138,13 @@ async def register(request: Request, email: str = Form(...), password: str = For
         raise HTTPException(status_code=500, detail=f"DB 오류: {str(e)}")
 
 
-# DataFetcher 인스턴스 생성
-fetcher = DataFetcher(fastapi_server="http://localhost:8001")
-
-
-@router.get("/api/stop-fetcher")
-async def stop_fetcher():
+@router.get("/get-data")
+async def get_data():
     """
-    DataFetcher 중지
+    다른 서버로 요청을 보내고 결과를 반환하는 엔드포인트.
     """
-    fetcher.stop()
-    return {"message": "DataFetcher stopped"}
-
-@router.get("/api/latest-data")
-async def get_latest_data():
-    """
-    최신 데이터를 반환
-    """
-    data = fetcher.get_latest_data()
-    return {"data": data}
+    try:
+        data = await ExternalAPI.fetch_data_from_other_server("send-data")
+        return {"message": "Data fetched successfully", "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
