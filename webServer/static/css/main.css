@@ -202,12 +202,56 @@ section {
   border-bottom: 1px solid var(--border-color);
   background-color: var(--card-background);
 }
+
+/* ===================== 내비게이션 바 컨테이너 ===================== */
+ul.nav.nav-underline {
+  display: flex !important;
+  justify-content: flex-start !important; /* 왼쪽 정렬 */
+
+  gap: 15px !important;
+  padding: 10px 0 !important;
+}
+
+/* ===================== 내비게이션 링크 기본 스타일 ===================== */
+ul.nav.nav-underline .nav-link {
+  padding: 10px 15px !important;
+  font-size: 1rem !important;
+  color: #b8b7b7 !important; /* 연한 회색 텍스트 */
+  text-decoration: none !important;
+  border: none !important;
+  background: transparent !important;
+  transition: all 0.3s ease !important;
+  font-weight: bold !important;
+}
+
+/* ===================== 활성화된 링크 (active) ===================== */
+ul.nav.nav-underline .nav-link.active {
+  color: #ffffff !important; /* 초록색 강조 */
+  border-bottom: 2px solid #ffffff !important;
+  font-weight: bold !important;
+}
+
+/* ===================== 링크 호버 효과 ===================== */
+ul.nav.nav-underline .nav-link:hover {
+  color: #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* ===================== 비활성화된 링크 (disabled) ===================== */
+ul.nav.nav-underline .nav-link.disabled {
+  color: #555 !important;
+  cursor: not-allowed !important;
+  border-bottom: none !important;
+  opacity: 0.6 !important;
+}
+
 /* h2 태그 스타일 */
 .details h2 {
   font-size: 35px;
   color: #c3c3c6;
   font-weight: bold; /* 볼드체 */
   padding: 15px;
+  margin-bottom: 20px;
 }
 
 /* 부모 컨테이너 설정 */
@@ -226,87 +270,100 @@ section {
   padding-left: 40px;
 }
 
-.details .col-lg-6 h2 {
-  margin-bottom: 20px;
-}
 .details .col-lg-6:last-child {
   margin-left: 20px; /* 왼쪽 여백 추가 (안으로 들어오게 조정) */
   padding-top: 5px; /* 종목추천과 맞추기 위해 여백 추가 */
 }
 
-/* 종목추천 표 스타일  !!! 비로그인 */
-
-.not-logged-in .recommend-table {
-  max-width: 800px;
+/* 종목추천 표 스타일   */
+.recommend-table {
+  max-width: 1000px;
   width: 100%;
   border-collapse: collapse; /* 테이블 셀 경계선 제거 */
   overflow: hidden; /* 테이블 내용 넘침 방지 */
-  background-color: var(--table-background);
-  color: var(--text-color);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* 테이블 그림자 */
+  background-color: #121212; /* 다크모드 배경색 */
+  color: #e0e0e0; /* 연한 회색 텍스트 */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.7); /* 다크모드에 맞는 그림자 */
   text-align: center; /* 텍스트 가운데 정렬 */
+  border-radius: 12px; /* 둥근 모서리 */
 }
 
-.not-logged-in .recommend-table th,
-.not-logged-in .recommend-table td {
-  padding: 15px; /* 셀 내부 간격 */
-  background-color: rgba(255, 255, 255, 0.2); /* 셀 배경 */
-  color: #ffffff; /* 텍스트를 검은색으로 설정 */
+.recommend-table th {
+  padding: 15px;
+  background-color: #333333; /* 어두운 헤더 배경 */
+  color: #ffffff; /* 헤더 텍스트 색상 */
+  text-transform: uppercase; /* 텍스트 대문자 */
+  font-weight: bold;
+  border-bottom: 2px solid #444; /* 헤더와 본문 구분선 */
 }
 
-.not-logged-in .recommend-table th {
-  background-color: #55608f; /* 헤더 배경색 */
-  color: #ffffff; /* 헤더 텍스트 흰색 */
-  text-align: center;
+.recommend-table td {
+  padding: 15px;
+  background-color: #1e1e1e; /* 다크모드 배경색 */
+  color: #e0e0e0; /* 연한 회색 텍스트 */
+  border-bottom: 1px solid #333; /* 행 구분선 */
 }
 
-.not-logged-in .recommend-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+.recommend-table tbody tr:hover {
+  background-color: #292929; /* 호버 시 밝아지는 효과 */
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
 }
 
-.not-logged-in .positive {
+.positive {
   color: #5dbb63 !important;
   font-weight: bold;
 }
 
-.not-logged-in .negative {
+.negative {
   color: #e57373 !important;
   font-weight: bold;
 }
-/* 종목추천 표 스타일  로그인상태  */
-
-.logged-in .recommend-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: #2c2c2c; /* 더 밝은 배경 */
-  color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  text-align: left;
+/* ===================== 페이지네이션 컨테이너 ===================== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  list-style: none;
+  gap: 10px;
 }
 
-.logged-in .recommend-table thead th {
-  background-color: #55608f;
-  color: #ffffff;
-  padding: 12px;
+/* 페이지네이션 버튼 기본 스타일 */
+.pagination li {
+  list-style: none;
 }
 
-.logged-in .recommend-table tbody tr {
-  border-bottom: 1px solid #555555;
+.pagination a {
+  text-decoration: none;
+  padding: 10px 15px;
+  color: #b8b7b7; /* 연한 회색 텍스트 */
+  background: transparent;
+  border: none;
+  font-weight: bold; /* 텍스트 볼드체 */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
 }
 
-.logged-in .recommend-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transition: background-color 0.3s ease-in-out;
-}
-
-.logged-in .positive {
-  color: #ff4d4d; /* 상승 빨간색 */
+/* 현재 페이지 (활성화) */
+.pagination .active a {
+  color: #ffffff; /* 초록색 텍스트 */
   font-weight: bold;
+  border-bottom: 2px solid #ffffff; /* 하단에 강조선 */
+  box-shadow: none; /* 그림자 제거 */
 }
 
-.logged-in .negative {
-  color: #4d94ff; /* 하락 파란색 */
+/* 페이지네이션 호버 효과 */
+.pagination a:hover {
+  color: #ffffff;
+  border-bottom: 2px solid #ffffff;
+}
+
+/* 이전, 다음 버튼 (맨 끝 > 아이콘) */
+.pagination .next a,
+.pagination .prev a {
+  font-size: 1.2rem;
   font-weight: bold;
 }
 

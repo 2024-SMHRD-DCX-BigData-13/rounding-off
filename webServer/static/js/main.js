@@ -14,21 +14,6 @@ document.getElementById('logoutButton').addEventListener('click', () => {
     .catch((error) => console.error('Error:', error));
 });
 
-// 로그인 상태 확인
-const recommendSection = document.getElementById('recommend-section');
-
-// 로그인 함수
-function login() {
-  recommendSection.classList.remove('not-logged-in');
-  recommendSection.classList.add('logged-in');
-}
-
-// 로그아웃 함수
-function logout() {
-  recommendSection.classList.remove('logged-in');
-  recommendSection.classList.add('not-logged-in');
-}
-// 화면 다크모드(상시)
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 
 document.addEventListener('DOMContentLoaded', () => {
