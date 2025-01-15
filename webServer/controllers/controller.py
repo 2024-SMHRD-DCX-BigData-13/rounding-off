@@ -26,7 +26,7 @@ async def main_page(request: Request):
     """
     메인 페이지 렌더링.
     """
-    return templates.TemplateResponse("main.html", {"request": request})
+    return templates.TemplateResponse("inin.html", {"request": request})
 
 
 # 로그인 페이지 엔드포인트
@@ -153,28 +153,14 @@ async def register(request: Request, email: str = Form(...), password: str = For
 
 
 
-client = HttpClientModel(base_url="http://127.0.0.1:8001")  # 키움 API 서버 URL
-
-class StockRequest(BaseModel):
-    stock_codes: List[str]
-    start_date: str
-
-@router.post("/api/fetch_stock_data")
-def fetch_stock_data(request: StockRequest):
-    results = []
-    for stock_code in request.stock_codes:
-        try:
-            print(f"[메인 서버] 요청 보내기 - 종목코드: {stock_code}, 기준일자: {request.start_date}")
-            response = client.post_request(
-                endpoint="get_stock_data",
-                payload={"stock_code": stock_code, "start_date": request.start_date},
-            )
-            print(f"[메인 서버] 응답 받음 - 종목코드: {stock_code}, 데이터: {response}")
-            results.append({"stock_code": stock_code, "data": response})
-        except Exception as e:
-            print(f"[메인 서버] 요청 실패 - 종목코드: {stock_code}, 에러: {e}")
-            results.append({"stock_code": stock_code, "error": str(e)})
-    return {"results": results}
+@router.get("/api/receive_data")
+async def receive_data(request: Request):
+    try:
+        data = await request.json()
+        print("수신된 데이터:", data)
+        return {"status": "success", "message": "데이터가 성공적으로 수신되었습니다.", "received_count": len(data)}
+    except Exception as e:
+        return {"status": "error", "message": f"오류 발생: {str(e)}"}
 
 
 mock_db = {
