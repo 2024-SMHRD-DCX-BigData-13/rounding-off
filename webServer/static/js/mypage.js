@@ -188,3 +188,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+
+// 로그아웃기능
+document.getElementById('logoutButton').addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' })
+    .then(() => {
+      window.location.href = '/main';
+    })
+    .catch((error) => console.error('Error:', error));
+});
+
+// 스크롤
+const profileSection = document.getElementById('profile-section');
+const holdings = document.getElementById('holdings');
+const investmentSection = document.getElementById('investment-section');
+
+document.getElementById('goProfile').addEventListener('click', () => {
+  profileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+document.getElementById('goHoldings').addEventListener('click', () => {
+  holdings.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+document.getElementById('goInvestment').addEventListener('click', () => {
+  investmentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+window.addEventListener('scroll', () => {
+  const mypageList = document.getElementById('sidebar');
+  const offset = window.scrollY;
+
+  mypageList.style.position = 'fixed';
+})

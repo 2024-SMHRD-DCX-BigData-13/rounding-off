@@ -17,6 +17,8 @@ body {
 
 /* 헤더 스타일 */
 .custom-header {
+  position:fixed;
+  width: 100%;
   background-color: var(--card-background); /* 헤더 배경 */
   padding: 20px 0;
   height: 97px; /* 고정된 헤더 높이 */
