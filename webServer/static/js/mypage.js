@@ -214,10 +214,3 @@ document.getElementById('goHoldings').addEventListener('click', () => {
 document.getElementById('goInvestment').addEventListener('click', () => {
   investmentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 })
-
-window.addEventListener('scroll', () => {
-  const mypageList = document.getElementById('sidebar');
-  const offset = window.scrollY;
-
-  mypageList.style.position = 'fixed';
-})
