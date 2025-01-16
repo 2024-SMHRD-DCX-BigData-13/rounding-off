@@ -167,9 +167,10 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QAxContainer import QAxWidget
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, HTTPException
 import threading
 import asyncio
+import time
 
 app = FastAPI()
 
@@ -180,25 +181,28 @@ class KiwoomAPI:
         self.real_data = {}  # 실시간 데이터를 저장할 딕셔너리
         self.current_stock_code = None  # 현재 요청된 종목 코드
 
+        # 로그인 호출
         self.kiwoom.dynamicCall("CommConnect()")
         self.kiwoom.OnEventConnect.connect(self.on_event_connect)
         self.kiwoom.OnReceiveRealData.connect(self.on_receive_real_data)
 
     def on_event_connect(self, err_code):
+        """
+        로그인 이벤트 핸들러
+        """
         if err_code == 0:
             print("키움 API 로그인 성공")
         else:
             print(f"키움 API 로그인 실패: {err_code}")
             self.app.quit()
 
-    def set_real_reg(self, screen_no, code, fid_list, real_type):
+    def set_real_reg(self, code):
         """
         실시간 데이터 요청 등록.
-        - screen_no: 화면번호
-        - code: 종목코드
-        - fid_list: 실시간 정보 FID
-        - real_type: 0 = 마지막 등록 실시간 해제, 1 = 기존 등록 유지
         """
+        screen_no = "1000"  # 고유한 화면 번호 설정
+        fid_list = "10;15"  # 현재가(10), 거래량(15)
+        real_type = "0"  # 마지막 등록 실시간 해제 후 등록
         self.kiwoom.dynamicCall(
             "SetRealReg(QString, QString, QString, QString)",
             screen_no, code, fid_list, real_type
@@ -231,7 +235,9 @@ class KiwoomAPI:
             if self.current_stock_code in self.real_data:
                 data = self.real_data[self.current_stock_code]
                 await websocket.send_json(data)
-            await asyncio.sleep(1)  # 1초마다 데이터 전송
+            else:
+                print("실시간 데이터 없음")
+            await asyncio.sleep(1)
 
     def run(self):
         self.app.exec_()
@@ -240,11 +246,19 @@ kiwoom_instance = None
 
 @app.on_event("startup")
 def startup_event():
+    """
+    키움 API 초기화 및 실시간 데이터 요청 시작
+    """
     global kiwoom_instance
 
     def start_kiwoom_api():
         global kiwoom_instance
         kiwoom_instance = KiwoomAPI()
+        time.sleep(5)
+        # 실시간 데이터 요청 등록
+        stock_code = "005930"  # 예: 삼성전자
+        kiwoom_instance.set_real_reg(stock_code)
+
         kiwoom_instance.run()
 
     threading.Thread(target=start_kiwoom_api, daemon=True).start()
@@ -260,6 +274,3 @@ async def websocket_endpoint(websocket: WebSocket):
             await kiwoom_instance.push_real_data(websocket)
     except Exception as e:
         print(f"WebSocket 연결 종료: {e}")
-
-
-
