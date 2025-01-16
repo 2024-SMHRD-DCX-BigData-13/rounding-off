@@ -31,8 +31,7 @@
       <ul class="menu">
         <li><a id="goProfile">프로필 관리</a></li>
         <li><a id="goHoldings">보유 종목</a></li>
-        <li><a id="goInvestment">투자 현황</a></li>
-        <li><a>거래 내역</a></li>
+        <li><a id="goTrade">거래 내역</a></li>
         <li><a>관심 종목</a></li>
       </ul>
     </div>
@@ -134,26 +133,26 @@
             <thead>
               <tr>
                 <th>종목명</th>
-                <th>보유 수량</th>
-                <th>평단가</th>
                 <th>현재가</th>
-                <th>평가 손익</th>
+                <th>평가손익</th>
+                <th>매입단가</th>
+                <th>보유수량</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>삼성전자</td>
-                <td>100주</td>
-                <td>60,000원</td>
                 <td>65,000원</td>
                 <td>+ 500,000원</td>
+                <td>60,000원</td>
+                <td>100주</td>
               </tr>
               <tr>
                 <td>LG에너지솔루션</td>
-                <td>50주</td>
-                <td>400,000원</td>
                 <td>390,000원</td>
                 <td>- 500,000원</td>
+                <td>400,000원</td>
+                <td>50주</td>
               </tr>
             </tbody>
           </table>
@@ -161,15 +160,42 @@
       </section>
       <div class="my-list">
         <!-- 투자 현황 -->
-        <section id="investment-section">
-          <h1><b>투자 현황</b></h1>
-          <p>총 투자 금액: 5,000,000원</p>
-          <p>총 수익률: +12.5%</p>
+        <section id="trade-section">
+          <h1><b>거래 내역</b></h1>
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>종목명</th>
+                <th>평가손익</th>
+                <th>거래대금</th>
+                <th>거래량</th>
+                <th>구분</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2025.01.15</td>
+                <td>삼성전자</td>
+                <td>+720,000원(1.1%)</td>
+                <td>65,160,000원</td>
+                <td>1200주</td>
+                <td>매도</td>
+              </tr>
+              <tr>
+                <td>2025.01.15</td>
+                <td>LG에너지솔루션</td>
+                <td>+5,000,000원(0.1%)</td>
+                <td>3,520,000,000원</td>
+                <td>10000주</td>
+                <td>매도</td>
+              </tr>
+            </tbody>
+          </table>
 
           <!-- 그래프 캔버스 -->
-          <canvas id="investmentChart" width="800" height="200"></canvas>
+        </section>
       </div>
-      </section>
     </main>
   </div>
 
