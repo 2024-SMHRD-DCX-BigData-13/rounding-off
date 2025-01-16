@@ -1,5 +1,6 @@
 import sys  # 시스템 관련 기능
 import csv  # CSV 파일 저장 기능
+import os  # 파일 및 디렉토리 관리 기능
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QAxContainer import QAxWidget  # 키움 API 컨트롤
 from datetime import datetime
@@ -60,11 +61,8 @@ class KiwoomAPI:
                 # 디버깅: 현재 데이터 출력
                 print(f"수집 중: 일자={date}, 시가={open_price}, 고가={high_price}, 저가={low_price}, 종가={close_price}, 거래량={volume}")
 
-            if prev_next == "2":
-                print("다음 데이터 요청 중...")
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회", "opt10081", 2, "0101")
-            else:
-                self.print_and_save_data()
+            # 데이터 수신 후 바로 저장
+            self.print_and_save_data()
 
     def print_and_save_data(self):
         print("수집된 주식 데이터:")
@@ -75,7 +73,10 @@ class KiwoomAPI:
         self.save_to_csv()
 
     def save_to_csv(self):
-        filename = f"stock_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        directory = "./output_data"  # 저장 경로
+        filename = f"{directory}/stock_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        os.makedirs(directory, exist_ok=True)  # 디렉토리가 없으면 생성
+
         with open(filename, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.DictWriter(file, fieldnames=["date", "open", "high", "low", "close", "volume"])
             writer.writeheader()
