@@ -14,12 +14,12 @@ router = APIRouter()
 templates = Jinja2Templates(directory="views")
 
 # 메인 페이지 엔드포인트
-# @router.get("/", response_class=RedirectResponse)
-# async def read_root():
-#     """
-#     루트 URL 요청 시 /main 페이지로 리다이렉트.
-#     """
-#     return RedirectResponse(url="/main")
+@router.get("/", response_class=RedirectResponse)
+async def read_root():
+    """
+    루트 URL 요청 시 /main 페이지로 리다이렉트.
+    """
+    return RedirectResponse(url="/main")
 
 @router.get("/main")
 async def main_page(request: Request):

@@ -31,7 +31,7 @@ async def startup_event():
     for stock_code in stock_codes:
         asyncio.create_task(fetch_real_time_data(stock_code))
 
-@router.get("/")
-async def root():
-    return {"message": "메인 서버 실행 중, 실시간 데이터 수신 중"}
+# @router.get("/")
+# async def root():
+#     return {"message": "메인 서버 실행 중, 실시간 데이터 수신 중"}
 
