@@ -3,7 +3,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from controllers.controller import router as controller_router
-from controllers.db_controller import router as db_controller_router
+from controllers.user_controller import router as user_controller_router
+from controllers.stock_controller import router as stock_controller_router
+from controllers.trading_controller import router as trading_controller_router
+from controllers.fav_controller import router as fav_controller_router
+from controllers.kiwoom_controller import router as kiwoom_controller_router
 
 # FastAPI 애플리케이션 생성
 app = FastAPI()
@@ -14,8 +18,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # 템플릿 경로 설정 (HTML 파일)
 templates = Jinja2Templates(directory="views")
 
-app.add_middleware(SessionMiddleware, secret_key="your_secret_key")
+app.add_middleware(SessionMiddleware, secret_key="123")
 
 # 컨트롤러 라우터 추가
 app.include_router(controller_router)
-app.include_router(db_controller_router)
+app.include_router(user_controller_router)
+app.include_router(stock_controller_router)
+app.include_router(trading_controller_router)
+app.include_router(fav_controller_router)
+app.include_router(kiwoom_controller_router)

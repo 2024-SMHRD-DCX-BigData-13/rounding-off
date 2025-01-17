@@ -1,13 +1,15 @@
 :root {
-  --background-color: #18181B; /* 메인 배경색 */
+  --background-color: #18181b; /* 메인 배경색 */
   --card-background: #202124; /* 카드 섹션 배경 */
-  --border-color: #3A3B3D; /* 경계선 */
-  --text-color: #E4E4E7; /* 기본 텍스트 (밝은 회색) */
-  --highlight-color: #FFFFFF; /* 강조 텍스트 */
+  --border-color: #3a3b3d; /* 경계선 */
+  --text-color: #e4e4e7; /* 기본 텍스트 (밝은 회색) */
+  --highlight-color: #ffffff; /* 강조 텍스트 */
   --primary-color: #007bff; /* 주요 색상 */
+  --box-background: #202124; /* 카드와 동일 배경 */
 }
 
-html, body {
+html,
+body {
   height: 100%; /* 전체 높이를 화면 크기로 설정 */
   margin: 0;
   padding: 0;
@@ -16,6 +18,8 @@ html, body {
   color: var(--text-color); /* 기본 텍스트 색상 */
   display: flex; /* 전체 레이아웃 Flexbox */
   flex-direction: column; /* 위에서 아래로 정렬 */
+  justify-content: space-between;
+  min-height: 100vh;
 }
 
 /* 헤더 스타일 */
@@ -31,8 +35,8 @@ html, body {
   background: linear-gradient(90deg, #ff69b4, #8f2db6, #6f9cfc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  cursor: pointer;
 }
-
 
 /* 메인 콘텐츠 */
 .login-container {
@@ -40,7 +44,6 @@ html, body {
   justify-content: center;
   align-items: center;
   flex: 1; /* 남은 공간을 채움 */
-  
 }
 
 .login-card {

@@ -1,0 +1,124 @@
+:root {
+  --background-color: #18181b; /* 메인 배경색 */
+  --card-background: #202124; /* 카드 섹션 배경 */
+  --border-color: #3a3b3d; /* 경계선 */
+  --text-color: #e4e4e7; /* 기본 텍스트 */
+  --highlight-color: #ffffff; /* 강조 텍스트 */
+  --primary-color: #007bff; /* 주요 색상 */
+  --box-background: #202124; /* 카드와 동일 배경 */
+}
+
+/* ===================== 공통 설정 ===================== */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+}
+
+/* ===================== 헤더 유지 ===================== */
+.custom-header {
+  background-color: var(--card-background);
+  padding: 20px 0;
+  height: 97px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+  font-size: 2.5em;
+  background: linear-gradient(90deg, #ff69b4, #8f2db6, #6f9cfc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  cursor: pointer;
+}
+
+/* ===================== 버튼 그룹 ===================== */
+nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 15px;
+}
+
+nav ul li button {
+  font-size: 1em;
+  padding: 8px 15px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-color);
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+nav ul li .btn-primary {
+  font-weight: bold;
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+nav ul li .btn-primary:hover {
+  background-color: #0056b3;
+}
+
+#mypageButton {
+  gap: 15px;
+}
+/* ===================== 카드 ===================== */
+
+div.custom-section,
+form.custom-section {
+  background: #2a2a2a !important;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--text-color);
+  font-weight: bold;
+  box-shadow: none;
+}
+
+/* ===================== 차트 고정 크기 및 비율 수정 ===================== */
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  height: 350px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 12px;
+}
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 350px !important;
+  max-width: 700px !important;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* ===================== 버튼 ===================== */
+.btn-success {
+  background-color: #4caf50;
+  border: none;
+  font-weight: bold;
+}
+
+.btn-success:hover {
+  background-color: #45a049;
+}
+/* ===================== 푸터 (고정) ===================== */
+.custom-footer {
+  background-color: var(--card-background);
+  padding: 15px 0;
+  color: var(--text-color);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  margin-top: auto; /* 푸터 하단 고정 */
+}
