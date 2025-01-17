@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 평가 손익 색상 변경
 document.addEventListener('DOMContentLoaded', function () {
   const profitCells = document.querySelectorAll(
-    '#holdings tbody tr td:last-child'
+    'tbody tr td:nth-child(3)'
   );
 
   profitCells.forEach((cell) => {
@@ -188,3 +188,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+
+// 로그아웃기능
+document.getElementById('logoutButton').addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' })
+    .then(() => {
+      window.location.href = '/main';
+    })
+    .catch((error) => console.error('Error:', error));
+});
+
+// 스크롤
+const profileSection = document.getElementById('profile-section');
+const holdings = document.getElementById('holdings');
+const tradeSection = document.getElementById('trade-section');
+
+document.getElementById('goProfile').addEventListener('click', () => {
+  profileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+document.getElementById('goHoldings').addEventListener('click', () => {
+  holdings.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+document.getElementById('goTrade').addEventListener('click', () => {
+  tradeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})

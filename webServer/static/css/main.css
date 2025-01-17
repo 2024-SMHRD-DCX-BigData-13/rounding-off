@@ -17,6 +17,8 @@ body {
 
 /* 헤더 스타일 */
 .custom-header {
+  position:fixed;
+  width: 100%;
   background-color: var(--card-background); /* 헤더 배경 */
   padding: 20px 0;
   height: 97px; /* 고정된 헤더 높이 */
@@ -303,18 +305,18 @@ ul.nav.nav-underline .nav-link.disabled {
   border-bottom: 1px solid #333; /* 행 구분선 */
 }
 
-.recommend-table tbody tr:hover {
+.recommend-table tbody tr td~td:hover {
   background-color: #292929; /* 호버 시 밝아지는 효과 */
   transition: background-color 0.3s ease-in-out;
 }
 
 .positive {
-  color: #5dbb63 !important;
+  color:rgb(180, 63, 63) !important;
   font-weight: bold;
 }
 
 .negative {
-  color: #e57373 !important;
+  color: rgb(83, 83, 204) !important;
   font-weight: bold;
 }
 /* ===================== 페이지네이션 컨테이너 ===================== */
