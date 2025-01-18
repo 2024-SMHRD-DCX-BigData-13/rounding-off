@@ -42,45 +42,71 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch((error) => console.error('키움 API 연동 중 오류 발생:', error));
     });
 
-    // 회원정보 수정
+    // 회원 정보 수정
     const updateProfileForm = document.getElementById('updateProfileForm');
+    const passwordInput = document.getElementById('update-password');
+    const passwordCheckInput = document.getElementById('password-check');
+    const telInput = document.getElementById('update-phone');
+
+    // 세션에서 현재 비밀번호와 전화번호 가져오기
+    const sessionPassword = document.body.dataset.sessionPassword;
+    const sessionTel = document.body.dataset.sessionTel;
 
     updateProfileForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-    
-        // 입력된 데이터 가져오기
+
         const updatedData = {
-            email: document.getElementById('update-email').value.trim(), // 이메일 필드 값
-            password: document.getElementById('update-password').value.trim(), // 비밀번호 필드 값
-            tel: document.getElementById('update-phone').value.trim(), // 전화번호 필드 값
+            email: document.getElementById('update-email').value.trim(),
+            password: passwordInput.value.trim(),
+            tel: telInput.value.trim(),
         };
-    
+
         // 모든 필드 값 검증
         if (!updatedData.email || !updatedData.password || !updatedData.tel) {
             alert('모든 필드를 올바르게 입력하세요.');
             return;
         }
-    
+
+        // 비밀번호 확인
+        const password = passwordInput.value.trim();
+        const passwordCheck = passwordCheckInput.value.trim();
+        if (password !== passwordCheck) {
+            alert('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+            passwordInput.focus();
+            return;
+        }
+
+        // 기존 비밀번호와 비교
+        if (sessionPassword && password === sessionPassword) {
+            alert('기존 비밀번호와 동일합니다. 다른 비밀번호를 입력해주세요.');
+            passwordInput.focus();
+            return;
+        }
+
+        // 기존 전화번호와 비교
+        if (sessionTel && updatedData.tel === sessionTel) {
+            alert('기존 전화번호와 동일합니다. 다른 전화번호를 입력해주세요.');
+            telInput.focus();
+            return;
+        }
+
         try {
-            // API 요청
             const response = await fetch('/api/update-user-info', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedData), // JSON 데이터로 변환
+                body: JSON.stringify(updatedData),
             });
-    
-            // HTTP 오류 처리
+
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || '서버 응답 오류');
+                throw new Error(errorData.detail || '알 수 없는 오류가 발생했습니다.');
             }
-    
-            // JSON 응답 처리
+
             const data = await response.json();
             if (data.success) {
                 alert('회원정보가 성공적으로 수정되었습니다.');
-                document.getElementById('editProfileModal').style.display = 'none'; // 모달 닫기
-                location.reload(); // 페이지 새로고침
+                document.getElementById('editProfileModal').style.display = 'none';
+                location.reload();
             } else {
                 alert(`회원정보 수정 실패: ${data.message}`);
             }
