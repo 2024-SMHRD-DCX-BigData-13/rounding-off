@@ -5,3 +5,4 @@ class User(BaseModel):
     username: str
     email: str
     is_authenticated: bool = False
+

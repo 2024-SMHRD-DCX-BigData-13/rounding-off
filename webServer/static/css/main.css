@@ -588,3 +588,7 @@ a {
 .stockInfo{
   cursor: pointer;
 }
+
+#stocks-table-body {
+  transition: opacity 0.6s ease-in-out; /* 애니메이션 지속 시간 증가 */
+}

@@ -42,33 +42,54 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch((error) => console.error('키움 API 연동 중 오류 발생:', error));
     });
 
-  // 회원정보 저장
-  const updateProfileForm = document.getElementById('updateProfileForm');
-  updateProfileForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const updatedData = {
-      name: document.getElementById('update-name').value,
-      email: document.getElementById('update-email').value,
-      phone: document.getElementById('update-phone').value,
-    };
+    // 회원정보 수정
+    const updateProfileForm = document.getElementById('updateProfileForm');
 
-    fetch('/api/update-user-info', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          alert('회원정보가 성공적으로 수정되었습니다.');
-          modal.style.display = 'none';
-          location.reload();
-        } else {
-          alert('회원정보 수정 실패.');
+    updateProfileForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+    
+        // 입력된 데이터 가져오기
+        const updatedData = {
+            email: document.getElementById('update-email').value.trim(), // 이메일 필드 값
+            password: document.getElementById('update-password').value.trim(), // 비밀번호 필드 값
+            tel: document.getElementById('update-phone').value.trim(), // 전화번호 필드 값
+        };
+    
+        // 모든 필드 값 검증
+        if (!updatedData.email || !updatedData.password || !updatedData.tel) {
+            alert('모든 필드를 올바르게 입력하세요.');
+            return;
         }
-      })
-      .catch((error) => console.error('회원정보 수정 중 오류 발생:', error));
-  });
+    
+        try {
+            // API 요청
+            const response = await fetch('/api/update-user-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData), // JSON 데이터로 변환
+            });
+    
+            // HTTP 오류 처리
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '서버 응답 오류');
+            }
+    
+            // JSON 응답 처리
+            const data = await response.json();
+            if (data.success) {
+                alert('회원정보가 성공적으로 수정되었습니다.');
+                document.getElementById('editProfileModal').style.display = 'none'; // 모달 닫기
+                location.reload(); // 페이지 새로고침
+            } else {
+                alert(`회원정보 수정 실패: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('회원정보 수정 중 오류 발생:', error);
+            alert(`오류 발생: ${error.message}`);
+        }
+    });
+    
 });
 
 // 차트
@@ -171,24 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// 평가 손익 색상 변경
-document.addEventListener('DOMContentLoaded', function () {
-  const profitCells = document.querySelectorAll(
-    'tbody tr td:nth-child(3)'
-  );
-
-  profitCells.forEach((cell) => {
-    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-    const profitNumber = parseFloat(profitValue);
-
-    if (profitNumber > 0) {
-      cell.classList.add('positive-profit');
-    } else if (profitNumber < 0) {
-      cell.classList.add('negative-profit');
-    }
-  });
-});
-
 // 로그아웃기능
 document.getElementById('logoutButton').addEventListener('click', () => {
   fetch('/logout', { method: 'POST' })
@@ -214,3 +217,134 @@ document.getElementById('goHoldings').addEventListener('click', () => {
 document.getElementById('goTrade').addEventListener('click', () => {
   tradeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 })
+
+
+// 로그인 상태 확인
+document.addEventListener("DOMContentLoaded", function () {
+
+  fetch("/api/check-login", { 
+      method: "GET", 
+      credentials: "include" // 세션 정보 포함
+  })
+  .then(response => {
+      if (!response.ok) {
+          // HTTP 상태 코드가 성공 범위가 아닐 경우 에러 처리
+          throw new Error(`HTTP 오류: ${response.status}`);
+      }
+      return response.json();
+  })
+  .then(data => {
+      // 로그인 상태를 화면에 반영
+      const nameElement = document.getElementById("name");
+      const emailElement = document.getElementById("email")
+      const telElement = document.getElementById("tel")
+      const nameField = document.getElementById("update-name");
+      const emailField = document.getElementById("update-email");
+
+      if (data.isLoggedIn) {
+          nameElement.innerText = `${data.user.name}`;
+          emailElement.innerText = `${data.user.email}`
+          telElement.innerText = `${data.user.tel}`
+          if (nameField) {
+              nameField.value = data.user.name;
+          }
+          if (emailField) {
+              emailField.value = data.user.email;
+          }
+      } else {
+          nameElement.innerText = '로그인이 필요합니다.';
+      }
+  })
+  .catch(error => {
+      // 에러 로그 출력
+      console.error("로그인 상태 확인 중 오류 발생:", error);
+  });
+});
+
+// 보유 종목 데이터 출력
+document.addEventListener("DOMContentLoaded", function () {
+  
+  fetch("/mystocks")
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === "success") {
+              const stocks = data.data;
+              const tableBody = document.getElementById("my-stocks-table");
+
+              // 테이블에 데이터 추가
+              stocks.forEach(stock => {
+                  const row = document.createElement("tr")
+
+                  row.innerHTML = `
+                      <td>${stock["종목명"]}</td>
+                      <td>${stock["현재가"]}</td>
+                      <td>${stock["평가손익"]}</td>
+                      <td>${stock["매입단가"]}</td>
+                      <td>${stock["보유수량"]}</td>
+                  `;
+                  tableBody.appendChild(row);
+                  const profitCells = document.querySelectorAll(
+                    'tbody tr td:nth-child(3)'
+                  );
+                  // 평가 손익 색상 변경
+                  profitCells.forEach((cell) => {
+                    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
+                    const profitNumber = parseFloat(profitValue);
+                
+                    if (profitNumber > 0) {
+                      cell.classList.add('positive-profit');
+                    } else if (profitNumber < 0) {
+                      cell.classList.add('negative-profit');
+                    }
+                  });
+              });
+          } else {
+              console.error("데이터 로드 실패");
+          }
+      })
+      .catch(error => console.error("Error fetching stocks data:", error));
+});
+
+// 거래 내역 출력력
+document.addEventListener("DOMContentLoaded", function () {
+  // /stocks API 호출
+  fetch("/trade")
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === "success") {
+              const trades = data.data;
+              const tableBody = document.getElementById("trade-table-body");
+
+              // 테이블에 데이터 추가
+              trades.forEach(trade => {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
+                      <td>${trade["날짜"]}</td>
+                      <td>${trade["종목명"]}</td>
+                      <td>${trade["평가손익"]}</td>
+                      <td>${trade["거래대금"]}</td>
+                      <td>${trade["거래량"]}</td>
+                      <td>${trade["구분"]}</td>
+                  `;
+                  tableBody.appendChild(row);
+                  const profitCells = document.querySelectorAll(
+                    'tbody tr td:nth-child(3)'
+                  );
+                  // 평가 손익 색상 변경
+                  profitCells.forEach((cell) => {
+                    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
+                    const profitNumber = parseFloat(profitValue);
+                
+                    if (profitNumber > 0) {
+                      cell.classList.add('positive-profit');
+                    } else if (profitNumber < 0) {
+                      cell.classList.add('negative-profit');
+                    }
+                  });
+              });
+          } else {
+              console.error("데이터 로드 실패");
+          }
+      })
+      .catch(error => console.error("Error fetching stocks data:", error));
+});
