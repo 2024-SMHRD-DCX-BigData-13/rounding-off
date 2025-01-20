@@ -58,6 +58,7 @@ trio==0.28.0
 trio-websocket==0.11.1
 typing_extensions==4.12.2
 tzdata==2024.2
+unicorn==2.1.1
 urllib3==2.3.0
 uvicorn==0.34.0
 websocket-client==1.8.0
