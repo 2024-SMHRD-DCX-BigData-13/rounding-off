@@ -92,3 +92,22 @@ router = APIRouter()
 #     서버 시작 시 키움 API WebSocket 연결 시작
 #     """
 #     asyncio.create_task(receive_data_from_kiwoom())
+
+from fastapi import APIRouter, HTTPException
+import httpx
+
+
+router = APIRouter()
+
+# 서브 서버 URL 설정
+SUB_SERVER_URL = "http://127.0.0.1:8001/fetch-daily-data"
+
+@router.post("/trigger-data-fetch")
+async def request_stock_data():
+    url = "http://localhost:8001/fetch_stock_data"  # 서브 서버 URL
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+        return {"status": "success", "data": response.json()}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

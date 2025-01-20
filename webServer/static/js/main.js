@@ -254,3 +254,30 @@ document.addEventListener("DOMContentLoaded", function () {
       updateActiveElement(".pagination .active", pagination.querySelector(`[data-page="${currentPage}"]`).parentElement); // 초기 페이지 활성화
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const triggerDataFetch = async () => {
+        try {
+            // FastAPI 엔드포인트로 POST 요청 보내기
+            fetch("/trigger-data-fetch", {
+                method: "POST", // 반드시 POST 메서드 사용
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Request sent successfully");
+                } else {
+                    console.error(`Request failed: ${response.status}`);
+                }
+            })
+            .catch(error => console.error("Error:", error))
+        } catch (error) {
+            console.error("Error while sending request:", error);
+        }
+    };
+
+    // 요청 실행
+    triggerDataFetch();
+});
