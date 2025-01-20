@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 세션에서 현재 비밀번호와 전화번호 가져오기
     const sessionPassword = document.body.dataset.sessionPassword;
     const sessionTel = document.body.dataset.sessionTel;
+    
 
     updateProfileForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -266,6 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const telElement = document.getElementById("tel")
       const nameField = document.getElementById("update-name");
       const emailField = document.getElementById("update-email");
+      const telField = document.getElementById("update-phone");
 
       if (data.isLoggedIn) {
           nameElement.innerText = `${data.user.name}`;
@@ -276,6 +278,8 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           if (emailField) {
               emailField.value = data.user.email;
+          }if (telField) {
+            telField.value = data.user.tel;
           }
       } else {
           nameElement.innerText = '로그인이 필요합니다.';
