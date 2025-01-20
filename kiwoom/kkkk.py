@@ -1,4 +1,4 @@
-import asyncio
+import time
 from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtWidgets import QApplication
 import websockets
@@ -38,7 +38,6 @@ class KiwoomAPI(QAxWidget):
             print("[ERROR] Real-time data registration failed.")
 
     def _on_receive_real_data(self, code, real_type, data):
-        print(f"[DEBUG] OnReceiveRealData called: Code={code}, RealType={real_type}")
         if real_type == "주식체결":
             current_price = self.dynamicCall("GetCommRealData(QString, int)", code, 10).strip()
             volume = self.dynamicCall("GetCommRealData(QString, int)", code, 15).strip()
@@ -50,13 +49,16 @@ class KiwoomAPI(QAxWidget):
 
 
 def fetch_stock_codes_from_db():
+    """
+    MySQL에서 종목 코드를 가져옵니다.
+    """
     try:
         connection = mysql.connector.connect(
             host="project-db-cgi.smhrd.com",
             user="mp_24K_DCX13_p3_2",
             password="smhrd2",
             database="mp_24K_DCX13_p3_2",
-            port = 3307
+            port=3307
         )
         cursor = connection.cursor()
         cursor.execute("SELECT stock_idx FROM stocks")
@@ -77,10 +79,13 @@ def fetch_stock_codes_from_db():
             connection.close()
 
 
-async def send_real_data(kiwoom):
+def send_real_data(kiwoom):
+    """
+    실시간 데이터를 웹소켓으로 전송
+    """
     uri = "ws://localhost:8000/ws"  # 메인 서버 URI
     try:
-        async with websockets.connect(uri) as websocket:
+        with websockets.connect(uri) as websocket:
             print("[DEBUG] Connected to main server.")
             while True:
                 if kiwoom.real_data:
@@ -90,22 +95,13 @@ async def send_real_data(kiwoom):
                             "current_price": data["current_price"],
                             "volume": data["volume"]
                         })
-                        await websocket.send(payload)
+                        websocket.send(payload)
                         print(f"[DEBUG] Sent: {payload}")
                 else:
                     print("[DEBUG] No real_data available to send.")
-                await asyncio.sleep(1)
+                time.sleep(1)  # 1초 대기
     except Exception as e:
         print(f"[ERROR] WebSocket connection failed: {e}")
-
-
-def run_event_loop(kiwoom):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(send_real_data(kiwoom))
-    finally:
-        loop.close()
 
 
 def start_kiwoom():
@@ -127,7 +123,8 @@ def start_kiwoom():
 
     print("[DEBUG] KiwoomManager started.")
 
-    thread = threading.Thread(target=run_event_loop, args=(kiwoom,), daemon=True)
+    # 별도의 스레드에서 웹소켓 데이터 전송 실행
+    thread = threading.Thread(target=send_real_data, args=(kiwoom,), daemon=True)
     thread.start()
 
     app.exec_()
