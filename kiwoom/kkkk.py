@@ -7,9 +7,6 @@ import threading
 import mysql.connector
 import sys
 
-# 글로벌 KiwoomAPI 객체
-kiwoom = None
-
 
 class KiwoomAPI(QAxWidget):
     def __init__(self):
@@ -75,8 +72,7 @@ def fetch_stock_codes_from_db():
             connection.close()
 
 
-async def send_real_data():
-    global kiwoom
+async def send_real_data(kiwoom):
     uri = "ws://localhost:8000/ws"  # 메인 서버 웹소켓 URI
     try:
         async with websockets.connect(uri) as websocket:
@@ -97,7 +93,6 @@ async def send_real_data():
 
 
 def start_kiwoom():
-    global kiwoom
     app = QApplication(sys.argv)
     kiwoom = KiwoomAPI()
     kiwoom.login()
@@ -115,8 +110,9 @@ def start_kiwoom():
     kiwoom.request_real_data(screen_no, stock_codes, fid_list)
 
     print("[DEBUG] KiwoomManager started.")
-    asyncio.run(send_real_data())  # asyncio 이벤트 루프 시작
-    app.exec_()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(send_real_data(kiwoom))
 
 
 if __name__ == "__main__":
