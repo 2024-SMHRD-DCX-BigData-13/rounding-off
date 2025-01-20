@@ -2,12 +2,33 @@ document.getElementById('logo').addEventListener('click', function () {
   window.location.href = '/';
 });
 
+
+
+
+const interest = document.getElementById('interest');
+const interestModal= document.getElementById('interestModal');
+
+interest.addEventListener('click',() => {
+  interestModal.style.display = 'block';
+});
+
+window.addEventListener('click', (event) => {
+  if(event.target === interestModal){
+    interestModal.style.display = 'none';
+  }
+});
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   // 회원정보 수정 버튼 클릭 시 모달 열기
   const editProfileButton = document.getElementById('editProfileButton');
   const modal = document.getElementById('editProfileModal');
   const closeButton = document.querySelector('.close-button');
   const accountInfo = document.getElementById('account-info');
+
 
   editProfileButton.addEventListener('click', () => {
     modal.style.display = 'block';
@@ -378,3 +399,4 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .catch(error => console.error("Error fetching stocks data:", error));
 });
+
