@@ -100,6 +100,9 @@ class KiwoomAPI:
         stock_code, stock_name = self.current_stock
         cursor = self.db_connection.cursor()
 
+        # 기존 데이터 삭제
+        cursor.execute("DELETE FROM stock_datas WHERE stock_idx = %s", (stock_code,))
+
         for record in self.data:
             cursor.execute(
                 """
@@ -129,7 +132,7 @@ def job():
     db_connection.close()
 
 if __name__ == "__main__":
-    schedule.every().day.at("12:07").do(job)  # 매일 자정 실행
+    schedule.every().day.at("12:12").do(job)  # 매일 자정 실행
     print("스케줄러가 실행 중입니다. 프로그램을 종료하지 마세요.")
 
     while True:
