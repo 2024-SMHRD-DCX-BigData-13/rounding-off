@@ -109,7 +109,7 @@ if (stockPrice) {
   }
 }
 
-
+// 가격들 정리리
 const buyPrice = document.getElementById('buyPrice');
 const quantity = document.getElementById('quantity');
 const totalAmount = document.getElementById('totalAmount');
