@@ -118,11 +118,11 @@ class KiwoomAPI:
 # 스케줄러 함수
 def job():
     db_connection = pymysql.connect(
-        host="localhost",
-        user="com",
-        password="com01",
-        database="books",
-        charset="utf8mb4"
+        host="project-db-cgi.smhrd.com",
+        user="mp_24K_DCX13_p3_2",
+        password="smhrd2",
+        database="mp_24K_DCX13_p3_2",
+        port = 3307
     )
 
     app = QApplication(sys.argv)
@@ -132,7 +132,7 @@ def job():
     db_connection.close()
 
 if __name__ == "__main__":
-    schedule.every().day.at("12:12").do(job)  # 매일 자정 실행
+    schedule.every().day.at("16:27").do(job)  # 매일 자정 실행
     print("스케줄러가 실행 중입니다. 프로그램을 종료하지 마세요.")
 
     while True:

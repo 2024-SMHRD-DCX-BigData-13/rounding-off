@@ -31,10 +31,14 @@ class KiwoomAPI(QAxWidget):
             print(f"[ERROR] Login failed with error code: {err_code}")
 
     def request_real_data(self, screen_no, codes, fid_list):
-        print(f"[DEBUG] Requesting real-time data for codes: {codes}")
-        self.dynamicCall("SetRealReg(QString, QString, QString, QString)", screen_no, codes, fid_list, "0")
+        result = self.dynamicCall("SetRealReg(QString, QString, QString, QString)", screen_no, codes, fid_list, "0")
+        if result == 0:
+            print(f"[DEBUG] Real-time data registration successful for codes: {codes}")
+        else:
+            print("[ERROR] Real-time data registration failed.")
 
     def _on_receive_real_data(self, code, real_type, data):
+        print(f"[DEBUG] OnReceiveRealData called: Code={code}, RealType={real_type}")
         if real_type == "주식체결":
             current_price = self.dynamicCall("GetCommRealData(QString, int)", code, 10).strip()
             volume = self.dynamicCall("GetCommRealData(QString, int)", code, 15).strip()
@@ -48,10 +52,11 @@ class KiwoomAPI(QAxWidget):
 def fetch_stock_codes_from_db():
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="com",
-            password="com01",
-            database="books"
+            host="project-db-cgi.smhrd.com",
+            user="mp_24K_DCX13_p3_2",
+            password="smhrd2",
+            database="mp_24K_DCX13_p3_2",
+            port = 3307
         )
         cursor = connection.cursor()
         cursor.execute("SELECT stock_idx FROM stocks")
@@ -73,7 +78,7 @@ def fetch_stock_codes_from_db():
 
 
 async def send_real_data(kiwoom):
-    uri = "ws://localhost:8000/ws"  # 메인 서버 웹소켓 URI
+    uri = "ws://localhost:8000/ws"  # 메인 서버 URI
     try:
         async with websockets.connect(uri) as websocket:
             print("[DEBUG] Connected to main server.")
@@ -87,9 +92,20 @@ async def send_real_data(kiwoom):
                         })
                         await websocket.send(payload)
                         print(f"[DEBUG] Sent: {payload}")
+                else:
+                    print("[DEBUG] No real_data available to send.")
                 await asyncio.sleep(1)
     except Exception as e:
         print(f"[ERROR] WebSocket connection failed: {e}")
+
+
+def run_event_loop(kiwoom):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(send_real_data(kiwoom))
+    finally:
+        loop.close()
 
 
 def start_kiwoom():
@@ -111,8 +127,10 @@ def start_kiwoom():
 
     print("[DEBUG] KiwoomManager started.")
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(send_real_data(kiwoom))
+    thread = threading.Thread(target=run_event_loop, args=(kiwoom,), daemon=True)
+    thread.start()
+
+    app.exec_()
 
 
 if __name__ == "__main__":
