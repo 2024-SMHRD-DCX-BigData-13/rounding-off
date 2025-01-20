@@ -15,35 +15,35 @@ router = APIRouter()
 # 템플릿 경로 설정
 templates = Jinja2Templates(directory="views")
 
-@router.post("/login")
-async def login(request: Request, email: str = Form(...), password: str = Form(...)):
-    """
-    로그인 처리:
-    - 이메일과 비밀번호를 확인하여 세션에 로그인 정보를 저장.
-    - 유효하지 않을 경우 에러 메시지 반환.
-    """
-    connection = create_connection()
-    if not connection:
-        raise HTTPException(status_code=500, detail="데이터베이스 연결에 실패했습니다.")
+# @router.post("/login")
+# async def login(request: Request, email: str = Form(...), password: str = Form(...)):
+#     """
+#     로그인 처리:
+#     - 이메일과 비밀번호를 확인하여 세션에 로그인 정보를 저장.
+#     - 유효하지 않을 경우 에러 메시지 반환.
+#     """
+#     connection = create_connection()
+#     if not connection:
+#         raise HTTPException(status_code=500, detail="데이터베이스 연결에 실패했습니다.")
 
-    try:
-        with connection.cursor(dictionary=True) as cursor:
-            # 이메일로 사용자 정보 가져오기
-            query = "SELECT email, password, username, tel FROM users WHERE email = %s AND password = SHA2(%s, 256)"
-            cursor.execute(query, (email, password))
-            user = cursor.fetchone()
+#     try:
+#         with connection.cursor(dictionary=True) as cursor:
+#             # 이메일로 사용자 정보 가져오기
+#             query = "SELECT email, password, username, tel FROM users WHERE email = %s AND password = SHA2(%s, 256)"
+#             cursor.execute(query, (email, password))
+#             user = cursor.fetchone()
 
-            if not user:
-                raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 일치하지 않습니다.")
+#             if not user:
+#                 raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 일치하지 않습니다.")
 
-            # 세션에 로그인 정보 저장
-            request.session["is_logged_in"] = True
-            request.session["user"] = {"email": user["email"],"password": user["password"], "name": user["username"], "tel": user["tel"]}
+#             # 세션에 로그인 정보 저장
+#             request.session["is_logged_in"] = True
+#             request.session["user"] = {"email": user["email"],"password": user["password"], "name": user["username"], "tel": user["tel"]}
 
-            return RedirectResponse(url="/", status_code=303)
+#             return RedirectResponse(url="/", status_code=303)
 
-    finally:
-        close_connection(connection)
+#     finally:
+#         close_connection(connection)
 
 # 로그인 상태 체크 API
 @router.get("/api/check-login")
@@ -174,27 +174,27 @@ async def update_user_info(user_info: UpdateUserInfo, request: Request):
     finally:
         close_connection(connection)
 
-# mock_db = {
-#     "1@1": {
-#         "password": "1",  # 평문 비밀번호, 실제 환경에서는 해싱 필요
-#         "username": "TestUser"
-#     }
-# }
-# @router.post("/login")
-# async def login(request: Request, email: str = Form(...), password: str = Form(...)):
-#     """
-#     로그인 처리:
-#     - 이메일과 비밀번호를 확인하여 세션에 로그인 정보를 저장.
-#     - 유효하지 않을 경우 에러 메시지 반환.
-#     """
-#     # DB 대체 딕셔너리 사용
-#     user = mock_db.get(email)
+mock_db = {
+    "1@1": {
+        "password": "1",  # 평문 비밀번호, 실제 환경에서는 해싱 필요
+        "username": "TestUser"
+    }
+}
+@router.post("/login")
+async def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    """
+    로그인 처리:
+    - 이메일과 비밀번호를 확인하여 세션에 로그인 정보를 저장.
+    - 유효하지 않을 경우 에러 메시지 반환.
+    """
+    # DB 대체 딕셔너리 사용
+    user = mock_db.get(email)
     
-#     if not user or user["password"] != password:
-#         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 일치하지 않습니다.")
+    if not user or user["password"] != password:
+        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 일치하지 않습니다.")
 
-#     # 세션에 로그인 정보 저장
-#     request.session["is_logged_in"] = True
-#     request.session["user"] = {"email": email, "name": user["username"]}
+    # 세션에 로그인 정보 저장
+    request.session["is_logged_in"] = True
+    request.session["user"] = {"email": email, "name": user["username"]}
 
-#     return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
