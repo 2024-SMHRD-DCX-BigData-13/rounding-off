@@ -63,4 +63,9 @@ async def login_page(request: Request):
     """
     return templates.TemplateResponse("mypage.html", {"request": request})
 
-
+@router.get("/rule")
+async def main_page(request: Request):
+    """
+    약관 페이지 렌더링.
+    """
+    return templates.TemplateResponse("rule.html", {"request": request})
