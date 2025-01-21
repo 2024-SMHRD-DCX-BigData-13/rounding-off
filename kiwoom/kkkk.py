@@ -1,11 +1,22 @@
-import asyncio
+import mysql.connector
 from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtWidgets import QApplication
-import websockets
-import json
 import threading
-import mysql.connector
 import sys
+import time
+
+
+def clean_price(raw_price):
+    """
+    키움 OpenAPI에서 반환된 현재가 데이터를 정리합니다.
+    :param raw_price: 부호가 포함된 현재가 (문자열)
+    :return: 부호를 제거한 정수 값
+    """
+    try:
+        return abs(int(raw_price))  # 부호 제거 및 정수 변환
+    except ValueError:
+        print(f"[ERROR] Invalid price format: {raw_price}")
+        return 0
 
 
 class KiwoomAPI(QAxWidget):
@@ -36,24 +47,25 @@ class KiwoomAPI(QAxWidget):
             print(f"[DEBUG] Real-time data registration successful for codes: {codes}")
         else:
             print("[ERROR] Real-time data registration failed.")
-        # 요청한 값 확인
-        print(f"[DEBUG] Request Details: ScreenNo={screen_no}, Codes={codes}, FID={fid_list}")
+        print(f"[DEBUG] Real-time request - ScreenNo: {screen_no}, Codes: {codes}, FIDs: {fid_list}")
 
     def _on_receive_real_data(self, code, real_type, data):
-        print(f"[DEBUG] OnReceiveRealData called: Code={code}, RealType={real_type}, Data={data}")
         if real_type == "주식체결":
-            current_price = self.dynamicCall("GetCommRealData(QString, int)", code, 10).strip()
-            volume = self.dynamicCall("GetCommRealData(QString, int)", code, 15).strip()
-            print(f"[DEBUG] Raw Data: CurrentPrice={current_price}, Volume={volume}")
-            self.real_data[code] = {
-                "current_price": current_price,
-                "volume": volume
-            }
+            raw_price = self.dynamicCall("GetCommRealData(QString, int)", code, 10).strip()
+            current_price = clean_price(raw_price)
+
+            # 데이터가 유효한지 확인
+            if current_price > 0:
+                print(f"[DEBUG] Valid Data Received - Code: {code}, Price: {current_price}")
+                self.real_data[code] = {"current_price": current_price}
+            else:
+                print(f"[DEBUG] Invalid Data Skipped - Code: {code}, RawPrice: {raw_price}")
 
 
 def fetch_stock_codes_from_db():
     """
     MySQL에서 종목 코드를 가져옵니다.
+    :return: 세미콜론으로 구분된 종목 코드 문자열
     """
     try:
         connection = mysql.connector.connect(
@@ -64,14 +76,10 @@ def fetch_stock_codes_from_db():
             port=3307
         )
         cursor = connection.cursor()
-        cursor.execute("SELECT stock_idx FROM stocks")
+        cursor.execute("SELECT stock_idx FROM stocks LIMIT 20")  # 최대 20개 종목
         rows = cursor.fetchall()
-        if not rows:
-            print("[ERROR] No stock codes found in the database.")
-            return ""
-
-        stock_codes = ";".join([row[0] for row in rows])
-        print(f"[DEBUG] Loaded stock codes: {stock_codes}")
+        stock_codes = ";".join(row[0] for row in rows)
+        print(f"[DEBUG] Loaded stock codes from DB: {stock_codes}")
         return stock_codes
     except mysql.connector.Error as err:
         print(f"[ERROR] Database error: {err}")
@@ -82,41 +90,53 @@ def fetch_stock_codes_from_db():
             connection.close()
 
 
-async def send_real_data(kiwoom):
+def save_to_db(data):
     """
-    실시간 데이터를 웹소켓으로 전송
+    MySQL에 데이터를 저장.
+    :param data: 실시간 데이터 딕셔너리 (종목코드별 데이터)
     """
-    uri = "ws://localhost:8000/ws"  # 메인 서버 URI
-    try:
-        async with websockets.connect(uri) as websocket:
-            print("[DEBUG] Connected to main server.")
-            while True:
-                if kiwoom.real_data:
-                    for code, data in kiwoom.real_data.items():
-                        payload = json.dumps({
-                            "stock_code": code,
-                            "current_price": data["current_price"],
-                            "volume": data["volume"]
-                        })
-                        await websocket.send(payload)
-                        print(f"[DEBUG] Sent: {payload}")
-                else:
-                    print("[DEBUG] No real_data available to send.")
-                await asyncio.sleep(1)  # 1초 대기
-    except Exception as e:
-        print(f"[ERROR] WebSocket connection failed: {e}")
+    if not data:
+        print("[DEBUG] No data to save to DB.")
+        return
 
-
-def run_event_loop(kiwoom):
-    """
-    asyncio 이벤트 루프 실행
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(send_real_data(kiwoom))
+        connection = mysql.connector.connect(
+            host="project-db-cgi.smhrd.com",
+            user="mp_24K_DCX13_p3_2",
+            password="smhrd2",
+            database="mp_24K_DCX13_p3_2",
+            port=3307
+        )
+        cursor = connection.cursor()
+
+        # 데이터 삽입 쿼리
+        query = """
+        INSERT INTO realtime_stocks (stock_idx, current_price, create_at)
+        VALUES (%s, %s, NOW())
+        """
+        values = [(code, info["current_price"]) for code, info in data.items()]
+        cursor.executemany(query, values)  # 배치 삽입
+        connection.commit()
+
+        print(f"[DEBUG] Data saved to DB: {len(values)} records")
+    except mysql.connector.Error as err:
+        print(f"[ERROR] Database error: {err}")
     finally:
-        loop.close()
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+def periodic_save(kiwoom, interval=5):
+    """
+    5초마다 실시간 데이터를 DB에 저장.
+    """
+    while True:
+        time.sleep(interval)
+        if kiwoom.real_data:
+            save_to_db(kiwoom.real_data)
+        else:
+            print("[DEBUG] No real-time data available to save.")
 
 
 def start_kiwoom():
@@ -129,21 +149,18 @@ def start_kiwoom():
 
     stock_codes = fetch_stock_codes_from_db()
     if not stock_codes:
-        print("[ERROR] No stock codes available.")
+        print("[ERROR] Failed to fetch stock codes from DB.")
         return
 
-    # 테스트를 위해 종목 코드를 줄일 수도 있음
-    # stock_codes = "005930;000660"
-
     screen_no = "1000"
-    fid_list = "10;15"  # 현재가, 거래량
+    fid_list = "10"  # 현재가만 요청
     kiwoom.request_real_data(screen_no, stock_codes, fid_list)
 
     print("[DEBUG] KiwoomManager started.")
 
-    # 별도의 스레드에서 asyncio 이벤트 루프 실행
-    thread = threading.Thread(target=run_event_loop, args=(kiwoom,), daemon=True)
-    thread.start()
+    # 주기적으로 DB에 저장하는 스레드 실행
+    save_thread = threading.Thread(target=periodic_save, args=(kiwoom,), daemon=True)
+    save_thread.start()
 
     app.exec_()
 
