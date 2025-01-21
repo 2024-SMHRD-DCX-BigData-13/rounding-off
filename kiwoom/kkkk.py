@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication
 import threading
 import sys
 import time
+import datetime
 
 
 def clean_price(raw_price):
@@ -17,6 +18,40 @@ def clean_price(raw_price):
     except ValueError:
         print(f"[ERROR] Invalid price format: {raw_price}")
         return 0
+
+
+def clean_old_data():
+    """
+    이전 날짜 데이터를 삭제합니다.
+    """
+    try:
+        connection = mysql.connector.connect(
+            host="project-db-cgi.smhrd.com",
+            user="mp_24K_DCX13_p3_2",
+            password="smhrd2",
+            database="mp_24K_DCX13_p3_2",
+            port=3307
+        )
+        cursor = connection.cursor()
+
+        # 현재 날짜 가져오기
+        today = datetime.datetime.now().date()
+
+        # 이전 날짜 데이터 삭제
+        query = """
+        DELETE FROM realtime_stocks
+        WHERE DATE(create_at) < %s
+        """
+        cursor.execute(query, (today,))
+        connection.commit()
+
+        print(f"[DEBUG] Old data cleaned: {cursor.rowcount} rows deleted")
+    except mysql.connector.Error as err:
+        print(f"[ERROR] Database error during cleanup: {err}")
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
 
 
 class KiwoomAPI(QAxWidget):
@@ -161,6 +196,10 @@ def start_kiwoom():
     # 주기적으로 DB에 저장하는 스레드 실행
     save_thread = threading.Thread(target=periodic_save, args=(kiwoom,), daemon=True)
     save_thread.start()
+
+    # 하루가 끝나면 데이터를 정리하는 스레드 실행
+    cleaner_thread = threading.Thread(target=clean_old_data, daemon=True)
+    cleaner_thread.start()
 
     app.exec_()
 
