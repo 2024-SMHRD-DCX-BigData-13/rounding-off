@@ -92,3 +92,33 @@ router = APIRouter()
 #     서버 시작 시 키움 API WebSocket 연결 시작
 #     """
 #     asyncio.create_task(receive_data_from_kiwoom())
+
+from fastapi import APIRouter, HTTPException, Request, WebSocket
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.logger import logger
+import httpx
+
+
+router = APIRouter()
+
+templates = Jinja2Templates(directory="views")
+
+# 서브 서버 URL 설정
+SUB_SERVER_URL = "http://127.0.0.1:8001/fetch-daily-data"
+
+@router.get("/client")
+async def client(request: Request):
+    # /templates/client.html파일을 response함
+    return templates.TemplateResponse("client.html", {"request":request})
+
+# 웹소켓 설정 ws://127.0.0.1:8000/ws 로 접속할 수 있음
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    print(f"client connected : {websocket.client}")
+    await websocket.accept() # client의 websocket접속 허용
+    await websocket.send_text(f"Welcome client : {websocket.client}")
+    while True:
+        data = await websocket.receive_text()  # client 메시지 수신대기
+        print(f"message received : {data} from : {websocket.client}")
+        await websocket.send_text(f"Message text was: {data}") # client에 메시지 전달

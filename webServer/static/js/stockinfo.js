@@ -86,11 +86,50 @@ const stockChart = new Chart(ctx, {
 
 const params = new URLSearchParams(window.location.search);
 const stockId = params.get('id');
+const stockPrice = params.get('currentPrice');
 
 if (stockId) {
-  const kname = decodeURIComponent(stockId);
-  const stockInfoElement = document.getElementById('stock-name');
-  if (stockInfoElement) {
-    stockInfoElement.textContent = `${stockId}`;
+  const stockNameElement = document.getElementById('stock-name');
+
+  if (stockNameElement) {
+    stockNameElement.textContent = `${stockId}`;
   }
 }
+// `stock-price` 요소에 현재가 표시
+if (stockPrice) {
+  const stockPriceElement = document.getElementById('stock-price');
+  const buyPriceElement = document.getElementById('buyPrice');
+  if (stockPriceElement) {
+    const formattedPrice = stockPrice.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '원'; // 숫자 포맷 후 '원' 추가
+    stockPriceElement.textContent = formattedPrice;
+  }
+  if (buyPriceElement) {
+    const numericPrice = stockPrice.replace(/[^0-9]/g, ''); // 숫자만 추출
+    buyPriceElement.value = numericPrice; // `value` 속성에 설정
+  }
+}
+
+// 가격들 정리리
+const buyPrice = document.getElementById('buyPrice');
+const quantity = document.getElementById('quantity');
+const totalAmount = document.getElementById('totalAmount');
+
+
+function formatNumber(number){
+  return new Intl.NumberFormat('ko-KR').format(number);
+}
+
+function totalPay() {
+  const price = parseFloat(buyPrice.value || 0);
+  const qty = parseFloat(quantity.value || 0);
+  const total = price*qty;
+  totalAmount.value = formatNumber(total);
+}
+
+buyPrice.addEventListener("input", totalPay);
+quantity.addEventListener("input", totalPay);
+
+window.addEventListener("DOMContentLoaded", function(){
+const total = parseFloat(buyPrice.value || 0)*parseFloat(quantity.value || 0);
+totalAmount.value = formatNumber(total);
+})

@@ -90,7 +90,7 @@ html, body {
 /* 버튼 스타일 */
 .signup-button {
     padding: 10px;
-    background-color: var(--primary-color); /* 주요 색상 */
+    background-color: var(--bs-btn-color); /* 주요 색상 */
     color: var(--highlight-color);
     border: none;
     border-radius: 5px;
@@ -126,4 +126,32 @@ html, body {
     border-top: 1px solid var(--border-color);
     text-align: center;
     margin-top: auto; /* Flexbox를 활용한 하단 고정 */
+}
+
+#ruleContain{
+    display: flex;
+    margin-right: auto;
+    align-items: center;
+}
+#ruleContain label{
+    order: 2;
+    margin-right: auto;
+    margin-bottom: 0;
+}
+
+.checkBox {
+    order: 1;
+    height: 17px;
+    width: 17px !important;
+    margin-right: 7px;
+}
+#ruleContain a {
+    order: 3;
+    text-decoration: none;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+#minTitle{
+    font-weight: bold;
 }

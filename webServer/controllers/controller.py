@@ -29,6 +29,8 @@ async def main_page(request: Request):
     return templates.TemplateResponse("main.html", {"request": request})
 
 
+
+
 # 로그인 페이지 엔드포인트
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -60,3 +62,10 @@ async def login_page(request: Request):
     마이페이지 페이지 렌더링.
     """
     return templates.TemplateResponse("mypage.html", {"request": request})
+
+@router.get("/rule")
+async def main_page(request: Request):
+    """
+    약관 페이지 렌더링.
+    """
+    return templates.TemplateResponse("rule.html", {"request": request})

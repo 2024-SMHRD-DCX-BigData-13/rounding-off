@@ -273,9 +273,10 @@ th {
 
 /* 모달 제목 스타일 */
 .modal-content h2 {
+  font-weight: bold;
   color: #cfcfcf; /* 부드러운 강조 색상 */
   margin-bottom: 20px;
-  font-size: 20px;
+  font-size: 1.8em;
   text-align: center;
   padding-bottom: 0px;
 }
@@ -283,7 +284,7 @@ th {
 /* 닫기 버튼 스타일 */
 .close-button {
   color: #ff7777; /* 강조 색상 */
-  float: right;
+  text-align: right;
   font-size: 24px;
   font-weight: bold;
   cursor: pointer;

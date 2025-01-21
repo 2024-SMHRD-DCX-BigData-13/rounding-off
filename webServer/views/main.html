@@ -65,17 +65,18 @@
         <h2>종목추천</h2>
         <ul class="nav nav-underline">
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="#">상위 추천 top 10</a>
+            <a class="nav-link active" id="top-recommend">상위 추천 top 10</a>
+            <!--  aria-current="page" -->
           </li>
           <li class="nav-item">
-            <a class="nav-link">거래량 top 10</a>
+            <a class="nav-link" id="top-volume">거래량 top 10</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">거래대금 top 10</a>
+            <a class="nav-link" id="top-value">거래대금 top 10</a>
           </li>
-          <li class="nav-item">
+          <!-- <li class="nav-item">
             <a class="nav-link" href="#">시가총액 top 10</a>
-          </li>
+          </li> -->
         </ul>
         <div class="table -container">
           <table class="recommend-table">
@@ -84,12 +85,14 @@
                 <th>순위</th>
                 <th>종목명</th>
                 <th>현재가</th>
+                <th>거래량</th>
                 <th>예측(다음날)</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="stocks-table-body">
+              <!-- js로 데이터 받아서 생성 되게 변경됨 -->
               <!-- 기존 5개 종목 -->
-              <tr>
+              <!-- <tr>
                 <td>1</td>
                 <td class="stockInfo" id="삼성전자(005930)">삼성전자</td>
                 <td>70,000원</td>
@@ -118,10 +121,10 @@
                 <td class="stockInfo" id="POSCO홀딩스(005490)">POSCO홀딩스</td>
                 <td>407,000원</td>
                 <td class="negative">-2,500 (-0.61%)</td>
-              </tr>
+              </tr> -->
 
               <!-- 추가된 5개 종목 -->
-              <tr>
+              <!-- <tr>
                 <td>6</td>
                 <td class="stockInfo" id="현대자동차(005380)">현대자동차</td>
                 <td>180,000원</td>
@@ -150,16 +153,16 @@
                 <td class="stockInfo" id="LG에너지솔루션(373220)">LG에너지솔루션</td>
                 <td>530,000원</td>
                 <td class="negative">-3,500 (-0.66%)</td>
-              </tr>
+              </tr> -->
             </tbody>
           </table>
         </div>
-        <ul class="pagination">
+        <ul class="pagination" id = "pagination">
           <li class="prev"><a href="#">
-              < </a>
+              </a>
           </li>
-          <li class="active"><a href="#">1</a></li>
-          <li><a href="#">2</a></li>
+          <li class="active"><a data-page="1">1</a></li>
+          <li><a data-page="2">2</a></li>
           <li><a href="#">3</a></li>
           <li><a href="#">4</a></li>
           <li><a href="#">5</a></li>
@@ -297,9 +300,9 @@
       </div>
     </section>
 
-    <h1>Stock Data Chart</h1>
+    <!-- <h1>Stock Data Chart</h1>
     <canvas id="stockChart" width="800" height="400"></canvas>
-  </main>
+  </main> -->
 
   <!-- 푸터 -->
   <footer class="custom-footer">
