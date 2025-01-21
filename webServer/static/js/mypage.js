@@ -5,18 +5,18 @@ document.getElementById('logo').addEventListener('click', function () {
 
 
 
-const interest = document.getElementById('interest');
-const interestModal= document.getElementById('interestModal');
+// const interest = document.getElementById('interest');
+// const interestModal= document.getElementById('interestModal');
 
-interest.addEventListener('click',() => {
-  interestModal.style.display = 'block';
-});
+// interest.addEventListener('click',() => {
+//   interestModal.style.display = 'block';
+// });
 
-window.addEventListener('click', (event) => {
-  if(event.target === interestModal){
-    interestModal.style.display = 'none';
-  }
-});
+// window.addEventListener('click', (event) => {
+//   if(event.target === interestModal){
+//     interestModal.style.display = 'none';
+//   }
+// });
 
 
 

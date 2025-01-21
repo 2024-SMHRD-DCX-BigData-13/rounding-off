@@ -157,3 +157,42 @@ canvas {
   color: inherit; /* 주변 텍스트와 같은 색상 */
   font-weight: bold;
 }
+
+/* 기본 스타일 */
+.heart-button {
+  justify-items: right;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url('../img/white.png'); /* 빈 하트 이미지 */
+  transition: transform 0.2s ease-in-out;
+  margin-left: auto;
+  margin-bottom: 8px;
+  margin-right: 5px;
+}
+
+/* 클릭했을 때(채워진 하트) */
+.heart-button.active {
+  background-image: url('../img/red.png'); /* 채워진 하트 이미지 */
+  width: 30px;
+  height: 30px;
+  margin-right: 0px;
+
+}
+
+/* 클릭 시 살짝 확대되는 효과 */
+.heart-button:active {
+  transform: scale(1.2);
+}
+
+.titlelist{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
