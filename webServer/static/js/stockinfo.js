@@ -145,3 +145,15 @@ document.getElementById('logoutButton').addEventListener('click', () => {
 document.getElementById('mypageButton').addEventListener('click', () => {
   window.location.href = '/mypage'; // 마이페이지 페이지 URL
 });
+
+// 즐찾 기능 --------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const favoriteButton = document.getElementById('favoriteButton');
+
+ 
+  favoriteButton.addEventListener('click', () => {
+    favoriteButton.classList.toggle('active');
+  });
+});
+
+
