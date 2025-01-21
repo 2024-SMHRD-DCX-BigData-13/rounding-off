@@ -18,67 +18,6 @@ document.getElementById('logoutButton').addEventListener('click', () => {
 
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 서버에서 로그인 상태 확인
-  fetch('/api/check-login')
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.isLoggedIn) {
-        // 로그인 상태일 때 관심종목 섹션 표시
-        document.getElementById('favorites').style.display = 'block';
-        // document.getElementsByClassName('intro').style.display = 'none';
-        document.getElementById('loginButton').style.display = 'none';
-        document.getElementById('logoutButton').style.display = 'block';
-        document.getElementById('mypageButton').style.display = 'block';
-        document.getElementById('image-content').style.display = 'none';
-        document.getElementById('opentext').style.display = 'none';
-      }
-    })
-    .catch((error) => console.error('Error:', error));
-});
-
-// document.addEventListener("DOMContentLoaded", function () {
-//   // /stocks API 호출
-//   fetch("/stocks")
-//       .then(response => response.json())
-//       .then(data => {
-//           if (data.status === "success") {
-//               const stocks = data.data;
-//               const tableBody = document.getElementById("stocks-table-body");
-
-//               // 테이블에 데이터 추가
-//               stocks.forEach(stock => {
-//                   const row = document.createElement("tr");
-
-//                   const prediction = stock["예측(다음날)"];
-//                   const predictionClass = prediction.startsWith("+") ? "positive" : "negative";
-
-//                   row.innerHTML = `
-//                       <td>${stock["순위"]}</td>
-//                       <td class="stockInfo" id="${stock["종목명"]}">${stock["종목명"]}</td>
-//                       <td>${stock["현재가"]}</td>
-//                       <td class="${predictionClass}">${stock["예측(다음날)"]}</td>
-//                   `;
-//                   tableBody.appendChild(row);
-//               });
-
-//               // 테이블 렌더링 후 이벤트 바인딩
-//               const stockInfo = document.getElementsByClassName('stockInfo');
-//               Array.from(stockInfo).forEach((element) => {
-//                   element.addEventListener('click', () => {
-//                       const name = element.id;
-//                       const kname = encodeURIComponent(name);
-//                       window.location.href = `/stockinfo?id=${kname}`;
-//                   });
-//               });
-//           } else {
-//               console.error("데이터 로드 실패");
-//           }
-//       })
-//       .catch(error => console.error("Error fetching stocks data:", error));
-// });
-
-
 document.addEventListener("DOMContentLoaded", function () {
     const tableBody = document.getElementById("stocks-table-body");
     const pagination = document.getElementById("pagination");
@@ -168,11 +107,9 @@ document.addEventListener("DOMContentLoaded", function () {
   
         // 클릭 이벤트 추가
         row.addEventListener("click", function () {
-          const name = stock["종목명"];
-          const currentPrice = stock["현재가"];
-          const encodedName = encodeURIComponent(name);
-          const encodedPrice = encodeURIComponent(currentPrice);
-          window.location.href = `/stockinfo?id=${encodedName}&currentPrice=${encodedPrice}`;
+          const id = stock["종목코드"];
+          const encodedId = encodeURIComponent(id);
+          window.location.href = `/stockinfo?id=${encodedId}`;
         });
   
         tableBody.appendChild(row);
@@ -258,5 +195,84 @@ document.addEventListener("DOMContentLoaded", function () {
       updateActivePage(1); // 초기 활성화 페이지 설정
       setInterval(refreshStocksData, 5000); // 5초마다 데이터 갱신
     });
+  });
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    // 서버에서 로그인 상태 확인
+    fetch('/api/check-login')
+      .then((response) => response.json())
+      .then(async (data) => {
+        if (data.isLoggedIn) {
+          // 로그인 상태일 때 관심종목 섹션 표시
+          document.getElementById('favorites').style.display = 'block';
+          document.getElementById('loginButton').style.display = 'none';
+          document.getElementById('logoutButton').style.display = 'block';
+          document.getElementById('mypageButton').style.display = 'block';
+          document.getElementById('image-content').style.display = 'none';
+          document.getElementById('opentext').style.display = 'none';
+  
+          // 이메일을 기반으로 관심종목 가져오기
+          const email = data.user.email;
+          await fetchFavorites(email);
+  
+          // 5초마다 관심종목 데이터 갱신
+          setInterval(() => fetchFavorites(email), 5000);
+        }
+      })
+      .catch((error) => console.error('Error:', error));
+  
+    async function fetchFavorites(email) {
+      const favoritesContainer = document.querySelector('#favorites .card-container');
+  
+      try {
+        const response = await fetch('/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        if (data.status === 'success') {
+          renderFavorites(data.data, favoritesContainer);
+        } else {
+          console.error('Error fetching favorites:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching favorites:', error.message);
+      }
+    }
+  
+    function renderFavorites(favorites, container) {
+      container.innerHTML = ''; // 기존 데이터 초기화
+  
+      favorites.forEach((favorite) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+  
+        // 숫자 형식 지정 (쉼표 추가)
+        const formattedPrice = new Intl.NumberFormat('ko-KR').format(favorite.current_price);
+  
+        // 클릭 이벤트를 추가하여 stockinfo 페이지로 이동
+        card.addEventListener('click', () => {
+          const encodedId = encodeURIComponent(favorite.stock_idx); // ID 인코딩
+          window.location.href = `stockinfo?id=${encodedId}`;
+        });
+  
+        card.innerHTML = `
+          <p class="title">${favorite.stock_name}</p>
+          <p class="value">${formattedPrice}원</p>
+          <p class="change ${favorite.prediction.includes('+') ? 'positive' : 'negative'}">
+            ${favorite.prediction}
+          </p>
+        `;
+        container.appendChild(card);
+      });
+    }
   });
   

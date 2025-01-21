@@ -13,6 +13,7 @@ body {
   padding: 0;
   background-color: var(--background-color);
   color: var(--text-color);
+  overflow-x: none;
 }
 
 /* 헤더 스타일 */
@@ -592,3 +593,4 @@ a {
 #stocks-table-body {
   transition: opacity 0.6s ease-in-out; /* 애니메이션 지속 시간 증가 */
 }
+
