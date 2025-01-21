@@ -417,3 +417,7 @@ canvas {
   padding: 17px;
   padding-top: 40px;
 }
+
+input:focus {
+  outline:none;
+}

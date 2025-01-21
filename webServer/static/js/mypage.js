@@ -106,11 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 기존 전화번호와 비교
-        if (sessionTel && updatedData.tel === sessionTel) {
-            alert('기존 전화번호와 동일합니다. 다른 전화번호를 입력해주세요.');
-            telInput.focus();
-            return;
-        }
+        // if (sessionTel && updatedData.tel === sessionTel) {
+        //     alert('기존 전화번호와 동일합니다. 다른 전화번호를 입력해주세요.');
+        //     telInput.focus();
+        //     return;
+        // }
 
         try {
             const response = await fetch('/api/update-user-info', {
@@ -400,3 +400,20 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(error => console.error("Error fetching stocks data:", error));
 });
 
+// 비밀번호 확인
+
+const password1 = document.getElementById('update-password');
+const password2 = document.getElementById('password-check');
+
+function passwordComp() {
+    if (password1.value == password2.value) {
+        password1.style = "border: 1px solid #00ff00";
+        password2.style = "border: 1px solid #00ff00";
+    } else {
+        password1.style = "border: 1px solid #ff0000";
+        password2.style = "border: 1px solid #ff0000";
+    }
+};
+
+password1.addEventListener("input", passwordComp);
+password2.addEventListener("input", passwordComp);

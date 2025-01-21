@@ -114,7 +114,6 @@ async def update_user_info(user_info: UpdateUserInfo, request: Request):
     """
     회원정보 수정 API:
     - 비밀번호와 전화번호를 업데이트.
-    - 비밀번호 또는 전화번호 중 하나라도 기존 값과 동일하면 업데이트 중단.
     - 업데이트 후, 이메일로 정보를 다시 조회하여 세션에 저장.
     """
     connection = create_connection()
@@ -126,22 +125,22 @@ async def update_user_info(user_info: UpdateUserInfo, request: Request):
             # 입력된 비밀번호를 SHA256으로 암호화
             hashed_password = hashlib.sha256(user_info.password.encode('utf-8')).hexdigest()
 
-            # 기존 데이터 가져오기
-            query = "SELECT password, tel FROM users WHERE email = %s"
-            cursor.execute(query, (user_info.email,))
-            existing_user = cursor.fetchone()
+            # # 기존 데이터 가져오기
+            # query = "SELECT password, tel FROM users WHERE email = %s"
+            # cursor.execute(query, (user_info.email,))
+            # existing_user = cursor.fetchone()
 
-            if not existing_user:
-                return {"success": False, "message": "사용자를 찾을 수 없습니다."}
+            # if not existing_user:
+            #     return {"success": False, "message": "사용자를 찾을 수 없습니다."}
 
-            # 기존 비밀번호와 전화번호 비교
-            if existing_user["password"] == hashed_password:
-                return {"success": False, "message": "입력된 비밀번호가 기존 비밀번호와 동일합니다."}
+            # # 기존 비밀번호와 전화번호 비교
+            # if existing_user["password"] == hashed_password:
+            #     return {"success": False, "message": "입력된 비밀번호가 기존 비밀번호와 동일합니다."}
 
-            if existing_user["tel"] == user_info.tel:
-                return {"success": False, "message": "입력된 전화번호가 기존 전화번호와 동일합니다."}
+            # if existing_user["tel"] == user_info.tel:
+            #     return {"success": False, "message": "입력된 전화번호가 기존 전화번호와 동일합니다."}
 
-            # 데이터 업데이트 (암호화된 비밀번호 저장)
+            # # 데이터 업데이트 (암호화된 비밀번호 저장)
             update_query = """
                 UPDATE users
                 SET password = %s, tel = %s
@@ -198,3 +197,26 @@ async def update_user_info(user_info: UpdateUserInfo, request: Request):
 #     request.session["user"] = {"email": email, "name": user["username"]}
 
 #     return RedirectResponse(url="/", status_code=303)
+
+@router.post("/emailCheck")
+async def login(request: Request, email: str = Form(...)):
+    """
+    email 중복 체크
+    """
+    connection = create_connection()
+    if not connection:
+        raise HTTPException(status_code=500, detail="데이터베이스 연결에 실패했습니다.")
+
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            query = "SELECT email, password, username, tel FROM users WHERE email = %s"
+            cursor.execute(query, (email,))
+            user = cursor.fetchone()
+
+            if not user:
+                return {"exists": True, "message": "이미 사용 중인 이메일입니다."}
+            else :
+                return {"exists": False, "message": "사용 가능한 이메일입니다."}
+            
+    finally:
+        close_connection(connection)
