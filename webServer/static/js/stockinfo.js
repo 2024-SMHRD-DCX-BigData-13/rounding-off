@@ -133,3 +133,15 @@ window.addEventListener("DOMContentLoaded", function(){
 const total = parseFloat(buyPrice.value || 0)*parseFloat(quantity.value || 0);
 totalAmount.value = formatNumber(total);
 })
+
+document.getElementById('logoutButton').addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' })
+    .then(() => {
+      window.location.href = '/main';
+    })
+    .catch((error) => console.error('Error:', error));
+});
+
+document.getElementById('mypageButton').addEventListener('click', () => {
+  window.location.href = '/mypage'; // 마이페이지 페이지 URL
+});
