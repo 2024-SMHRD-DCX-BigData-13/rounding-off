@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const currentPrice = stock["현재가"];
           const encodedName = encodeURIComponent(name);
           const encodedPrice = encodeURIComponent(currentPrice);
-          window.location.href = `/stockinfo?stock_name=${encodedName}&price=${encodedPrice}`;
+          window.location.href = `/stockinfo?id=${encodedName}&currentPrice=${encodedPrice}`;
         });
   
         tableBody.appendChild(row);
