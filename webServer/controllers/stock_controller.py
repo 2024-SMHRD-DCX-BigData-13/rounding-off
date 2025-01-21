@@ -3,6 +3,8 @@ from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from models.mySql import create_connection, close_connection  # MySQL 연결을 위한 함수
 from models.getKiwoom import HttpClientModel
+import mysql.connector
+import random
 from typing import List
 from pydantic import BaseModel
 import requests
@@ -23,36 +25,85 @@ async def receive_data(request: Request):
 
 
 
-stock_data = [
-    {"종목명": "삼성전자", "현재가": "70,000원", "거래량": "850,000주", "예측(다음날)": "+1,200 (1.74%)"},
-    {"종목명": "SK하이닉스", "현재가": "120,000원", "거래량": "720,000주", "예측(다음날)": "+3,000 (2.56%)"},
-    {"종목명": "NAVER", "현재가": "198,000원", "거래량": "530,000주", "예측(다음날)": "+4,000 (2.06%)"},
-    {"종목명": "현대자동차", "현재가": "180,000원", "거래량": "610,000주", "예측(다음날)": "+2,000 (1.12%)"},
-    {"종목명": "카카오", "현재가": "56,000원", "거래량": "480,000주", "예측(다음날)": "-500 (-0.89%)"},
-    {"종목명": "LG화학", "현재가": "540,000원", "거래량": "320,000주", "예측(다음날)": "+6,000 (1.12%)"},
-    {"종목명": "POSCO홀딩스", "현재가": "407,000원", "거래량": "290,000주", "예측(다음날)": "-2,500 (-0.61%)"},
-    {"종목명": '삼성바이오로직스', "현재가": "810,000원", "거래량": "150,000주", "예측(다음날)": "+5,000 (0.62%)"},
-    {"종목명": "SK이노베이션", "현재가": "160,000원", "거래량": "210,000주", "예측(다음날)": "+3,000 (1.89%)"},
-    {"종목명": "셀트리온", "현재가": "180,000원", "거래량": "340,000주", "예측(다음날)": "-1,000 (-0.55%)"},
-    {"종목명": "삼성SDI", "현재가": "630,000원", "거래량": "190,000주", "예측(다음날)": "-5,000 (-0.79%)"},
-    {"종목명": "현대모비스", "현재가": "220,000원", "거래량": "270,000주", "예측(다음날)": "+2,200 (1.00%)"},
-    {"종목명": "기아", "현재가": "78,500원", "거래량": "430,000주", "예측(다음날)": "+1,100 (1.42%)"},
-    {"종목명": "LG전자", "현재가": "120,000원", "거래량": "250,000주", "예측(다음날)": "-2,000 (-1.66%)"},
-    {"종목명": "카카오뱅크", "현재가": "33,000원", "거래량": "520,000주", "예측(다음날)": "+500 (1.54%)"},
-    {"종목명": "두산에너빌리티", "현재가": "18,500원", "거래량": "580,000주", "예측(다음날)": "+200 (1.08%)"},
-    {"종목명": "한화솔루션", "현재가": "48,000원", "거래량": "430,000주", "예측(다음날)": "+600 (1.25%)"},
-    {"종목명": "한국전력", "현재가": "22,000원", "거래량": "770,000주", "예측(다음날)": "-300 (-1.36%)"},
-    {"종목명": "HMM", "현재가": "17,500원", "거래량": "920,000주", "예측(다음날)": "-100 (-0.57%)"},
-    {"종목명": "CJ대한통운", "현재가": "120,000원", "거래량": "310,000주", "예측(다음날)": "+1,500 (1.25%)"}
-]
+# 예측 값을 캐싱하기 위한 딕셔너리
+prediction_cache = {}
+
 
 
 @router.get("/stocks")
 def get_stocks():
     """
-    FastAPI 엔드포인트: 주식 데이터를 JSON 형태로 반환
+    FastAPI 엔드포인트: stocks 데이터를 데이터베이스에서 조회하고 JSON 형태로 반환
     """
-    return JSONResponse(content={"status": "success", "data": stock_data})
+    connection = None
+    try:
+        # MySQL 연결
+        connection = create_connection()
+        cursor = connection.cursor()
+
+        # stocks 데이터 가져오기
+        cursor.execute("SELECT stock_idx, stock_name FROM stocks")
+        stocks = cursor.fetchall()
+
+        stock_data = []
+
+        for stock in stocks:
+            stock_idx = stock[0]
+            stock_name = stock[1]
+
+            # 최신 거래량 가져오기
+            cursor.execute("""
+                SELECT trade_volume
+                FROM stock_datas
+                WHERE stock_idx = %s
+                ORDER BY created_at DESC
+                LIMIT 1
+            """, (stock_idx,))
+            trade_volume_row = cursor.fetchone()
+            trade_volume = trade_volume_row[0] if trade_volume_row else "데이터 없음"
+
+            # 최신 현재가 가져오기
+            cursor.execute("""
+                SELECT current_price
+                FROM realtime_stocks
+                WHERE stock_idx = %s
+                ORDER BY create_at DESC
+                LIMIT 1
+            """, (stock_idx,))
+            current_price_row = cursor.fetchone()
+            current_price = float(current_price_row[0]) if current_price_row else None
+
+            # 예측(다음날) 생성 (다양한 변동 비율 사용)
+            if current_price is not None:
+                if stock_idx not in prediction_cache:
+                    # 변동 비율: -5% ~ +10% 범위에서 선택
+                    change_percentage = random.choice([-5, -3, -1, 1, 3, 5, 7, 10])
+                    prediction = current_price + current_price * 0.01 * change_percentage
+                    formatted_prediction = f"{int(prediction):,}원 ({change_percentage:+}%)"
+                    prediction_cache[stock_idx] = formatted_prediction
+                else:
+                    formatted_prediction = prediction_cache[stock_idx]
+            else:
+                formatted_prediction = "데이터 없음"
+
+            stock_data.append({
+                "종목명": stock_name,
+                "현재가": f"{int(current_price):,}원" if current_price is not None else "데이터 없음",
+                "거래량": f"{int(trade_volume):,}주" if trade_volume != "데이터 없음" else "데이터 없음",
+                "예측(다음날)": formatted_prediction
+            })
+
+        # JSON 형태로 반환
+        return JSONResponse(content={"status": "success", "data": stock_data})
+
+    except mysql.connector.Error as err:
+        print(f"[ERROR] Database error: {err}")
+        return JSONResponse(content={"status": "error", "message": str(err)})
+
+    finally:
+        if connection and connection.is_connected():
+            cursor.close()
+            connection.close()
 
 
 trade_data = [
