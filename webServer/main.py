@@ -11,8 +11,9 @@ from controllers.kiwoom_controller import router as kiwoom_controller_router
 from models.prediction_model import PredictionModel
 from models.mySql import create_connection, close_connection
 import threading
-import time
-from concurrent.futures import ThreadPoolExecutor  # 병렬 처리
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import logging
 
 # FastAPI 애플리케이션 생성
 app = FastAPI()
@@ -34,22 +35,31 @@ app.include_router(trading_controller_router)
 app.include_router(fav_controller_router)
 app.include_router(kiwoom_controller_router)
 
+# 로깅 설정
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
 # 데이터베이스 연결 및 PredictionModel 초기화
 db_config = create_connection()
 prediction_model = PredictionModel(db_config)
 
-# 스케줄러 작업 정의
-def run_daily_prediction():
+# 비동기 예측 실행
+async def run_daily_prediction():
     """
     모든 종목에 대해 병렬로 예측 실행.
     """
-    print("[INFO] Running daily prediction...")
+    logger.info("[INFO] Running daily prediction...")
     try:
-        with ThreadPoolExecutor(max_workers=4) as executor:  # 병렬 처리 스레드 수 조정
-            executor.map(prediction_model.train_and_predict, prediction_model.stock_list)
-        print("[INFO] Daily prediction completed.")
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            loop = asyncio.get_running_loop()
+            tasks = [
+                loop.run_in_executor(executor, prediction_model.train_and_predict, stock_idx)
+                for stock_idx in prediction_model.stock_list
+            ]
+            await asyncio.gather(*tasks)
+        logger.info("[INFO] Daily prediction completed.")
     except Exception as e:
-        print(f"[ERROR] Failed to run daily prediction: {e}")
+        logger.error(f"[ERROR] Failed to run daily prediction: {e}")
 
 # 스케줄러 실행 함수
 def scheduler_task():
@@ -57,9 +67,10 @@ def scheduler_task():
     매일 정해진 시간에 스케줄러를 실행.
     """
     import schedule
+    import time
 
-    print("[INFO] Scheduler task started and waiting for the scheduled time...")
-    schedule.every().day.at("17:39").do(run_daily_prediction)
+    logger.info("[INFO] Scheduler task started and waiting for the scheduled time...")
+    schedule.every().day.at("17:15").do(lambda: asyncio.run(run_daily_prediction()))
 
     while True:
         schedule.run_pending()
@@ -79,3 +90,4 @@ def close_db_connection():
     FastAPI 종료 시 데이터베이스 연결 닫기.
     """
     close_connection(db_config)
+    logger.info("[INFO] Database connection closed.")
