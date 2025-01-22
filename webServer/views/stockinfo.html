@@ -12,6 +12,12 @@
 </head>
 
 <body class="bg-dark text-white">
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="lodingW">주식정보를 불러오고 있습니다...</p>
+  </div>
+  <div id="content" style="display: none;">
+    
   <!-- 헤더 -->
   <header class="custom-header">
     <div class="container d-flex justify-content-between align-items-center">
@@ -40,51 +46,52 @@
       <div class="col-lg-8">
         <div class="card p-4 bg-secondary text-white custom-section">
           <div class="titlelist">
+            <img id="choicelogo" src="" alt="Stock Logo">
             <h3 id="stock-name"></h3>
-            <input id="stockCode" type="hidden" value="000000">
-            <button id="favoriteButton" class="heart-button"></button>
-          </div>
-          <p>현재가: <span class="text-success" id="stock-price"></span></p>
-          <canvas id="stockChart"></canvas>
+          <input id="stockCode" type="hidden" value="000000">
+          <button id="favoriteButton" class="heart-button"></button>
         </div>
-      </div>
-
-      <!-- 매수/매도 창 -->
-      <div class="col-lg-4">
-        <form class="p-4 bg-secondary rounded shadow-lg custom-section">
-          <h3 class="text-center mb-4">주문하기</h3>
-
-          <!-- 주문 유형 선택 -->
-          <div class="mb-3">
-            <label for="orderType" class="form-label">주문 유형</label>
-            <select class="form-select" id="orderType">
-              <option value="매수">매수</option>
-              <option value="매도">매도</option>
-            </select>
-          </div>
-
-          <!-- 매수가격 입력 -->
-          <div class="mb-3">
-            <label for="buyPrice" class="form-label">매수가격 (원)</label>
-            <input type="number" class="form-control" id="buyPrice"/>
-          </div>
-
-          <!-- 수량 입력 -->
-          <div class="mb-3">
-            <label for="quantity" class="form-label">수량</label>
-            <input type="number" class="form-control" id="quantity" value="1" />
-          </div>
-
-          <!-- 총 주문 금액 -->
-          <p>총 주문 금액: <input id="totalAmount"></p>
-
-          <!-- 주문 버튼 -->
-          <button type="button" class="btn btn-success w-100" onclick="placeOrder()">
-            주문하기
-          </button>
-        </form>
+        <p>현재가: <span class="text-success" id="stock-price"></span></p>
+        <canvas id="stockChart"></canvas>
       </div>
     </div>
+
+    <!-- 매수/매도 창 -->
+    <div class="col-lg-4">
+      <form class="p-4 bg-secondary rounded shadow-lg custom-section">
+        <h3 class="text-center mb-4">주문하기</h3>
+
+        <!-- 주문 유형 선택 -->
+        <div class="mb-3">
+          <label for="orderType" class="form-label">주문 유형</label>
+          <select class="form-select" id="orderType">
+            <option value="매수">매수</option>
+            <option value="매도">매도</option>
+          </select>
+        </div>
+
+        <!-- 매수가격 입력 -->
+        <div class="mb-3">
+          <label for="buyPrice" class="form-label">매수가격 (원)</label>
+          <input type="number" class="form-control" id="buyPrice" />
+        </div>
+
+        <!-- 수량 입력 -->
+        <div class="mb-3">
+          <label for="quantity" class="form-label">수량</label>
+          <input type="number" class="form-control" id="quantity" value="1" />
+        </div>
+
+        <!-- 총 주문 금액 -->
+        <p>총 주문 금액: <input id="totalAmount"></p>
+
+        <!-- 주문 버튼 -->
+        <button type="button" class="btn btn-success w-100" onclick="placeOrder()">
+          주문하기
+        </button>
+      </form>
+    </div>
+  </div>
   </div>
 
   <!-- 푸터 -->
@@ -93,6 +100,7 @@
       <p>&copy; 2025 StockPro. All rights reserved. ROUNDING-OFF</p>
     </div>
   </footer>
+</div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="../static/js/stockinfo.js"></script>

@@ -1,3 +1,26 @@
+function syncHeights() {
+  const form = document.querySelector('form.custom-section');
+  const div = document.querySelector('div.custom-section');
+
+  const divHeight = div.offsetHeight;
+  const formHeight = form.offsetHeight;
+
+  // 높이가 다를 때만 동기화
+  if (divHeight !== formHeight) {
+    form.style.height = `${divHeight}px`;
+  }
+}
+
+// ResizeObserver 설정
+const resizeObserver = new ResizeObserver(() => {
+  syncHeights(); // 높이 변경 시 동기화
+});
+
+// div.custom-section 높이 변경 감지
+const div = document.querySelector('div.custom-section');
+resizeObserver.observe(div);
+
+
 document.getElementById('logo').addEventListener('click', function () {
   window.location.href = '/';
 });
@@ -247,7 +270,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 받아온 데이터를 DOM에 표시
         document.getElementById("stock-name").innerText = data.data.stock_name;
         document.getElementById("stock-price").innerText = data.data.current_price;
-
+        const logoN = document.getElementById("choicelogo");
+        logoN.src = stockLogo(data.data.stock_name);
         // 현재가를 buyPrice input에 설정
         if (buyPrice) {
           const currentPrice = data.data.current_price.replace(/[,원]/g, '').trim(); // "원"과 쉼표 제거
@@ -402,5 +426,49 @@ document.addEventListener("DOMContentLoaded", () => {
   // 페이지 로드 시 즐겨찾기 상태 동기화
   syncFavoriteState();
 });
+
+
+function stockLogo (stockName){
+  const logoMapping = {
+    "삼성전자": "logo1.png",
+    "삼성SDI": "logo1.png",
+    "삼성바이오로직스": "logo1.png",
+    "SK하이닉스": "logo2.png",
+    "SK이노베이션": "logo2.png",
+    "LG화학": "logo3.png",
+    "LG전자": "logo3.png",
+    "CJ대한통운": "logo4.png",
+    "NAVER": "logo5.png",
+    "HMM": "logo6.png",
+    "POSCO홀딩스": "logo7.png",
+    "기아": "logo8.png",
+    "두산에너빌리티": "logo9.png",
+    "셀트리온": "logo10.png",
+    "카카오": "logo11.png",
+    "카카오뱅크": "logo12.png",
+    "한국전력": "logo13.png",
+    "한화솔루션": "logo14.png",
+    "현대모비스": "logo15.png",
+    "현대자동차": "logo16.png"
+  };
+  const path = "../static/img/"
+  const logoC = logoMapping[stockName] || 'red.png';
+  const plus = path + logoC;
+  return plus;
+}
+
+// 로딩창 
+const tdV = document.getElementById('stock-name');
+function loding () {
+  if (tdV.textContent.trim() !== ""){
+    const loading = document.getElementById("loading");
+    const content = document.getElementById("content");
+    loading.style.display = "none"; // 로딩 화면 숨김
+    content.style.display = "block"; // 실제 콘텐츠 표시
+ }
+}
+const observer = new MutationObserver(loding);
+observer.observe(tdV, { childList: true, subtree: true, characterData: true});
+
 
 
