@@ -275,4 +275,22 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   });
-  
+
+ // 로딩창 
+
+ const tdV = document.getElementById('stocks-table-body');
+ function loding () {
+   if (tdV.textContent.trim() !== ""){
+     const loading = document.getElementById("loading");
+     const content = document.getElementById("content");
+     loading.style.display = "none"; // 로딩 화면 숨김
+     content.style.display = "block"; // 실제 콘텐츠 표시
+     
+  }
+}
+const observer = new MutationObserver(loding);
+observer.observe(tdV, { childList: true, subtree: true, characterData: true});
+
+
+
+ 

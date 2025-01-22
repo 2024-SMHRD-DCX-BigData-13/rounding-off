@@ -23,7 +23,7 @@ function checkFrom() {
 inputs.forEach(input => {
     input.addEventListener("input", checkFrom);
 });
-checkBox.addEventListener("change", checkFrom);
+
 
 
 // 비밀번호 확인
@@ -65,9 +65,11 @@ document.getElementById("ruleLink").addEventListener("click", function (event) {
         if (agreed) {
             checkbox.checked = true;
             checkbox.disabled = false;
+            checkFrom();
         }
         window.close();
     };
+    
 
 });
 
