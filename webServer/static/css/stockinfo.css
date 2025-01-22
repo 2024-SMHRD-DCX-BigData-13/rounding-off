@@ -137,6 +137,10 @@ canvas {
   bottom:0;
   width: 100%;
 }
+.custom-footer p {
+  font-size: 16px;
+  font-weight: normal;
+}
 
 .form-select {
   background-color: #1E1E22; /* 약간 밝은 다크톤 */
@@ -219,8 +223,8 @@ canvas {
 }
 
 #choicelogo{
-  width: 33.1px;
-  height: 33.1px;
+  width: 38px;
+  height: 38px;
   margin-bottom: 8px;
   margin-right: 15px;
   border-radius: 10px;

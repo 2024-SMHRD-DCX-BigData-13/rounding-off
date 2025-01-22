@@ -682,13 +682,13 @@ tbody tr:last-child{
 }
 
 .stocklogo {
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
   vertical-align: middle;
   align-items: center;
   justify-items: center;
   margin-right: 15px;
-  border-radius: 5px;
+  border-radius: 15px;
  }
 .logoN{
   display: flex;
