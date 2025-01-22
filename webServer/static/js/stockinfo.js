@@ -13,6 +13,7 @@ const ctx = document.getElementById('stockChart').getContext('2d');
 let myChart;
 let chartData = { timestamps: [], prices: [] }; // 기존 데이터를 저장
 let isFirstRequest = true; // 첫 번째 요청 여부 플래그
+let lastTimestamp = null; // 이전 데이터의 마지막 타임스탬프 저장
 
 // 오늘과 어제 날짜를 "YYYY-MM-DD" 형식으로 가져오는 함수
 function getTodayAndYesterdayDates() {
@@ -40,14 +41,6 @@ function filterTodayAndYesterdayData(timestamps, prices) {
   return { timestamps: filteredTimestamps, prices: filteredPrices };
 }
 
-// y축 범위를 계산하는 함수 (최고가 +2000, 최저가 -2000)
-function calculateYAxisRange(prices) {
-  if (prices.length === 0) return { min: 0, max: 2000 }; // 데이터가 없을 경우 기본값 설정
-  const maxPrice = Math.max(...prices);
-  const minPrice = Math.min(...prices);
-  return { min: Math.max(0, minPrice - 2000), max: maxPrice + 2000 }; // 최소값은 0 이상
-}
-
 // 차트 데이터를 업데이트하는 함수
 function updateChart(newData) {
   console.log("Updating Chart with:", newData.timestamps, newData.prices);
@@ -65,8 +58,11 @@ function updateChart(newData) {
     chartData.prices.push(...filteredData.prices);
   }
 
-  // y축 범위 계산
-  const { min: yMin, max: yMax } = calculateYAxisRange(chartData.prices);
+  // y축 범위 계산 (최고가 +2000, 최저가 -2000)
+  const maxPrice = Math.max(...chartData.prices);
+  const minPrice = Math.min(...chartData.prices);
+  const yMin = Math.max(0, minPrice - 2000);
+  const yMax = maxPrice + 2000;
 
   if (!myChart) {
     console.log("Initializing Chart...");
@@ -82,6 +78,8 @@ function updateChart(newData) {
         }]
       },
       options: {
+        responsive: true, // 차트를 캔버스 크기에 맞게 조정
+        maintainAspectRatio: false, // 차트의 고정 비율 유지 여부
         plugins: {
           legend: {
             display: false // 상단 라벨 숨기기
@@ -120,6 +118,47 @@ function updateChart(newData) {
     myChart.update(); // 차트 업데이트 적용
   }
 }
+
+// 서버에서 데이터를 가져오는 함수
+async function fetchStockData() {
+  try {
+    const endpoint = isFirstRequest
+      ? `/api/stocks/${stockId}/all`  // 모든 데이터를 가져오는 엔드포인트
+      : `/api/stocks/${stockId}/latest`; // 최신 데이터를 가져오는 엔드포인트
+
+    const response = await fetch(endpoint);
+    const newData = await response.json();
+
+    console.log("Fetched Data:", newData);
+
+    // 이전 타임스탬프와 비교
+    if (lastTimestamp && newData.timestamps.length > 0) {
+      const latestTimestamp = newData.timestamps[newData.timestamps.length - 1];
+      if (latestTimestamp === lastTimestamp) {
+        console.log("[INFO] No new data received. Stopping requests.");
+        clearInterval(fetchInterval); // 주기적인 요청 중단
+        return;
+      }
+    }
+
+    // 업데이트 및 타임스탬프 갱신
+    updateChart(newData);
+    if (newData.timestamps.length > 0) {
+      lastTimestamp = newData.timestamps[newData.timestamps.length - 1];
+    }
+
+    isFirstRequest = false; // 첫 번째 요청 완료 플래그 설정
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+  }
+}
+
+// 20초마다 데이터를 요청하고 차트를 업데이트합니다.
+const fetchInterval = setInterval(fetchStockData, 20000);
+
+// 페이지 로드 시 초기 데이터를 요청합니다.
+fetchStockData();
+
 
 // 서버에서 데이터를 가져오는 함수
 async function fetchStockData() {
