@@ -93,13 +93,12 @@ document.addEventListener("DOMContentLoaded", function () {
         row.className = "stockInfo";
         row.dataset.current = stock["현재가"];
         row.id = stock["종목명"];
-  
         const prediction = stock["예측(다음날)"];
         const predictionClass = prediction.includes("+") ? "positive" : "negative";
-  
+        
         row.innerHTML = `
           <td style="text-align: center; vertical-align: middle; width: 10%;">${startIndex + index + 1}</td>
-          <td style="text-align: center; vertical-align: middle; width: 35%;">${stock["종목명"]}</td>
+          <td style="text-align: center; vertical-align: middle; width: 35%;"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
           <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["현재가"]}</td>
           <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["거래량"]}</td>
           <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${stock["예측(다음날)"]}</td>
@@ -263,9 +262,9 @@ document.addEventListener("DOMContentLoaded", function () {
           const encodedId = encodeURIComponent(favorite.stock_idx); // ID 인코딩
           window.location.href = `stockinfo?id=${encodedId}`;
         });
-  
+  // <div id="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}"
         card.innerHTML = `
-          <p class="title">${favorite.stock_name}</p>
+          <div class="title"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(favorite.stock_name)}"><p>${favorite.stock_name}</p></div></div>
           <p class="value">${formattedPrice}원</p>
           <p class="change ${favorite.prediction.includes('+') ? 'positive' : 'negative'}">
             ${favorite.prediction}
@@ -294,3 +293,31 @@ observer.observe(tdV, { childList: true, subtree: true, characterData: true});
 
 
  
+function stockLogo (stockName){
+  const logoMapping = {
+    "삼성전자": "logo1.png",
+    "삼성SDI": "logo1.png",
+    "삼성바이오로직스": "logo1.png",
+    "SK하이닉스": "logo2.png",
+    "SK이노베이션": "logo2.png",
+    "LG화학": "logo3.png",
+    "LG전자": "logo3.png",
+    "CJ대한통운": "logo4.png",
+    "NAVER": "logo5.png",
+    "HMM": "logo6.png",
+    "POSCO홀딩스": "logo7.png",
+    "기아": "logo8.png",
+    "두산에너빌리티": "logo9.png",
+    "셀트리온": "logo10.png",
+    "카카오": "logo11.png",
+    "카카오뱅크": "logo12.png",
+    "한국전력": "logo13.png",
+    "한화솔루션": "logo14.png",
+    "현대모비스": "logo15.png",
+    "현대자동차": "logo16.png"
+  };
+  const path = "../static/img/"
+  const logoC = logoMapping[stockName] || 'red.png';
+  const plus = path + logoC;
+  return plus;
+}
