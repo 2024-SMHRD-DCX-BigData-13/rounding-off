@@ -1,123 +1,138 @@
+import pandas as pd
+import numpy as np
 import mysql.connector
-import time
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error
+import multiprocessing
+import warnings
+import itertools
 
+# 경고 무시
+warnings.filterwarnings("ignore")
 
-def fetch_stocks_with_volume():
+# 데이터베이스에서 특정 종목 데이터 로드
+def load_data_from_db(stock_idx):
+    connection = mysql.connector.connect(
+        host='project-db-cgi.smhrd.com',         # MySQL 서버 주소 (기본 localhost)
+        port=3307,                # MySQL 서버 포트 (기본 3306, 다른 포트인 경우 변경)
+        database='mp_24K_DCX13_p3_2', # 연결할 데이터베이스 이름
+        user='mp_24K_DCX13_p3_2',     # MySQL 사용자명
+        password='smhrd2'  # MySQL 비밀번호
+    )
+
+    query = f"""
+    SELECT stock_date, close_price, highest_price, lowest_price, trade_volume
+    FROM stock_datas
+    WHERE stock_idx = '{stock_idx}'
+    ORDER BY stock_date ASC;
     """
-    stocks 테이블에서 종목 데이터와 초기 거래량을 조회합니다.
-    """
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(query)
+    data = pd.DataFrame(cursor.fetchall())
+    connection.close()
+    return data
+
+# ARIMA 모델 학습 및 예측 함수
+def train_and_predict(stock_idx):
     try:
-        # MySQL 연결
-        connection = mysql.connector.connect(
-            host="project-db-cgi.smhrd.com",
-            user="mp_24K_DCX13_p3_2",
-            password="smhrd2",
-            database="mp_24K_DCX13_p3_2",
-            port=3307
-        )
-        cursor = connection.cursor()
+        # 데이터 로드
+        data = load_data_from_db(stock_idx)
 
-        # stocks 테이블에서 데이터 가져오기
-        cursor.execute("SELECT stock_idx, stock_name FROM stocks")
-        stocks = cursor.fetchall()
+        # 데이터 전처리
+        data['stock_date'] = pd.to_datetime(data['stock_date'])
+        data.set_index('stock_date', inplace=True)
+        data.sort_index(inplace=True)
 
-        result = []
+        data['close_price'] = data['close_price'].astype(float)
+        data['highest_price'] = data['highest_price'].astype(float)
+        data['lowest_price'] = data['lowest_price'].astype(float)
+        data['trade_volume'] = data['trade_volume'].astype(float)
 
-        for stock in stocks:
-            stock_idx = stock[0]
-            stock_name = stock[1]
+        # 로그 변환
+        data['log_close'] = np.log(data['close_price'])
+        data['log_high'] = np.log(data['highest_price'])
+        data['log_low'] = np.log(data['lowest_price'])
+        data['log_volume'] = np.log(data['trade_volume'] + 1)
 
-            # 초기 거래량 가져오기
-            cursor.execute("""
-                SELECT trade_volume
-                FROM stock_datas
-                WHERE stock_idx = %s
-                ORDER BY created_at DESC
-                LIMIT 1
-            """, (stock_idx,))
-            trade_volume_row = cursor.fetchone()
-            trade_volume = trade_volume_row[0] if trade_volume_row else "데이터 없음"
+        # 이동 평균 및 기술적 지표 추가
+        data['ma_5'] = data['close_price'].rolling(window=5).mean()
+        data['ma_20'] = data['close_price'].rolling(window=20).mean()
+        data['macd'] = data['ma_5'] - data['ma_20']
 
-            result.append({
-                "stock_idx": stock_idx,
-                "stock_name": stock_name,
-                "trade_volume": f"{trade_volume:,}주" if trade_volume != "데이터 없음" else "데이터 없음"
-            })
+        data.fillna(method='bfill', inplace=True)
 
+        # 훈련 및 테스트 데이터 분리
+        train_size = int(len(data) * 0.8)
+        train_data = data.iloc[:train_size]
+        test_data = data.iloc[train_size:]
+
+        y_train = train_data['log_close']
+        y_test = test_data['log_close']
+        exog_columns = ['log_high', 'log_low', 'log_volume', 'macd']
+        exog_train = train_data[exog_columns]
+        exog_test = test_data[exog_columns]
+
+        # ARIMA 모델 최적화 (Grid Search)
+        p = d = q = range(0, 3)
+        pdq = list(itertools.product(p, d, q))
+        best_aic = float("inf")
+        best_order = None
+
+        for order in pdq:
+            try:
+                model = ARIMA(y_train, exog=exog_train, order=order)
+                result = model.fit()
+                if result.aic < best_aic:
+                    best_aic = result.aic
+                    best_order = order
+            except:
+                continue
+
+        # 최적의 모델로 예측
+        arima_model = ARIMA(y_train, exog=exog_train, order=best_order)
+        fitted_model = arima_model.fit()
+        next_day_features = exog_test.iloc[-1].values.reshape(1, -1)
+        next_day_forecast_log = fitted_model.forecast(steps=1, exog=next_day_features)
+        next_day_forecast = np.exp(next_day_forecast_log.iloc[0])
+
+        # 결과 출력
+        current_price = np.exp(y_test.iloc[-1])
+        price_change = next_day_forecast - current_price
+        trend = "상승" if price_change > 0 else "하락"
+
+        result = {
+            "stock_idx": stock_idx,
+            "current_price": current_price,
+            "predicted_price": next_day_forecast,
+            "trend": trend,
+            "change": price_change,
+            "percentage_change": (price_change / current_price) * 100
+        }
         return result
+    except Exception as e:
+        print(f"[ERROR] Stock: {stock_idx}, Error: {e}")
+        return None
 
-    except mysql.connector.Error as err:
-        print(f"[ERROR] Database error while fetching stocks and volume: {err}")
-        return []
+# 메인 함수: 병렬 처리
+def main():
+    stock_list = [
+        "005930", "000660", "035420", "005380", "035720",
+        "051910", "005490", "207940", "096770", "068270",
+        "006400", "012330", "000270", "066570", "323410",
+        "034020", "009830", "015760", "011200", "000120"
+    ]
 
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+    # 멀티프로세싱 풀 생성
+    with multiprocessing.Pool(processes=4) as pool:  # CPU 코어 수에 맞게 조정
+        results = pool.map(train_and_predict, stock_list)
 
-
-def fetch_realtime_prices(stocks):
-    """
-    stocks 데이터에 대해 5초마다 최신 현재가를 업데이트합니다.
-    """
-    try:
-        # MySQL 연결
-        connection = mysql.connector.connect(
-            host="project-db-cgi.smhrd.com",
-            user="mp_24K_DCX13_p3_2",
-            password="smhrd2",
-            database="mp_24K_DCX13_p3_2",
-            port=3307
-        )
-        cursor = connection.cursor()
-
-        while True:
-            print("Fetching realtime prices...")
-            for stock in stocks:
-                stock_idx = stock["stock_idx"]
-
-                # 최신 현재가 가져오기
-                cursor.execute("""
-                    SELECT current_price
-                    FROM realtime_stocks
-                    WHERE stock_idx = %s
-                    ORDER BY create_at DESC
-                    LIMIT 1
-                """, (stock_idx,))
-                current_price_row = cursor.fetchone()
-
-                if current_price_row:
-                    # 현재가 정수 변환 및 저장
-                    current_price = int(float(current_price_row[0]))
-                    print(f"[DEBUG] Stock: {stock_idx}, Current Price: {current_price}")
-                    stock["current_price"] = f"{current_price:,}원"
-                else:
-                    print(f"[DEBUG] No data found for Stock: {stock_idx}")
-                    stock["current_price"] = "데이터 없음"
-
-            # 출력
-            for stock in stocks:
-                print({
-                    "종목명": stock["stock_name"],
-                    "현재가": stock.get("current_price", "데이터 없음"),
-                    "거래량": stock["trade_volume"]
-                })
-
-            # 5초 대기
-            time.sleep(5)
-
-    except mysql.connector.Error as err:
-        print(f"[ERROR] Database error while fetching realtime prices: {err}")
-
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-
+    # 결과 출력
+    for res in results:
+        if res:
+            print(f"Stock: {res['stock_idx']}, Current: {res['current_price']:.2f}, "
+                  f"Predicted: {res['predicted_price']:.2f}, "
+                  f"Trend: {res['trend']}, Change: {res['change']:.2f} "
+                  f"({res['percentage_change']:+.2f}%)")
 
 if __name__ == "__main__":
-    # 초기 데이터 가져오기
-    stocks_with_volume = fetch_stocks_with_volume()
-
-    # 5초마다 현재가 업데이트
-    fetch_realtime_prices(stocks_with_volume)
+    main()

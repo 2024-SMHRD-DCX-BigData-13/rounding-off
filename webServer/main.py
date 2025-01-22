@@ -8,7 +8,11 @@ from controllers.stock_controller import router as stock_controller_router
 from controllers.trading_controller import router as trading_controller_router
 from controllers.fav_controller import router as fav_controller_router
 from controllers.kiwoom_controller import router as kiwoom_controller_router
-import subprocess
+from models.prediction_model import PredictionModel
+from models.mySql import create_connection, close_connection
+import schedule
+import threading
+import time
 # FastAPI 애플리케이션 생성
 app = FastAPI()
 
@@ -28,32 +32,36 @@ app.include_router(trading_controller_router)
 app.include_router(fav_controller_router)
 app.include_router(kiwoom_controller_router)
 
+db_config = create_connection()
 
-def start_external_file():
-    """
-    외부 Python 파일 실행
-    """
-    try:
-        # 서브 파일 실행 (비동기로 실행)
-        subprocess.Popen(["python", "../kiwoom/kiwoom.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print("[INFO] External file started successfully.")
-    except Exception as e:
-        print(f"[ERROR] Failed to start external file: {e}")
+prediction_model = PredictionModel(db_config)
 
+# 스케줄러 작업 정의
+def run_daily_prediction():
+    print("[INFO] Running daily prediction...")
+    stock_list = [
+        "005930", "000660", "035420", "005380", "035720",
+        "051910", "005490", "207940", "096770", "068270",
+        "006400", "012330", "000270", "066570", "323410",
+        "034020", "009830", "015760", "011200", "000120"
+    ]
+    for stock in stock_list:
+        print(f"[INFO] Processing stock: {stock}")
+        prediction_model.train_and_predict(stock)
 
+# 스케줄러 실행 함수
+def scheduler_task():
+    print("[INFO] Scheduler task started and waiting for the scheduled time...")
+    schedule.every().day.at("17:15").do(run_daily_prediction)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 @app.on_event("startup")
-async def startup_event():
-    """
-    FastAPI 서버 시작 시 호출되는 이벤트
-    """
-    print("[INFO] FastAPI is starting...")
-    start_external_file()
+def start_scheduler():
+    thread = threading.Thread(target=scheduler_task, daemon=True)
+    thread.start()
 
 @app.on_event("shutdown")
-async def shutdown_event():
-    """
-    FastAPI 서버 종료 시 호출되는 이벤트
-    """
-    print("[INFO] FastAPI is shutting down...")
-    # 필요시 외부 프로세스 종료 코드 추가 가능
+def close_db_connection():
+    close_connection(db_config)
