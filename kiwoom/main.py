@@ -2,11 +2,11 @@ import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from kiwoom_api import KiwoomAPI
-import mysql.connector
-from PyQt5.QtWidgets import QApplication
+import pythoncom
 
-# Kiwoom 객체 초기화
+
 kiwoom = None
+
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -50,33 +50,23 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(f"Failed to request historical data: {e}".encode())
 
+
 def initialize_kiwoom():
     """Kiwoom API 초기화"""
     global kiwoom
-    app_instance = QApplication([])
-    db_connection = mysql.connector.connect(
-        host="project-db-cgi.smhrd.com",
-        user="mp_24K_DCX13_p3_2",
-        password="smhrd2",
-        database="mp_24K_DCX13_p3_2",
-        port=3307
-    )
-    kiwoom = KiwoomAPI(db_connection)
-
-    # 로그인 처리
+    kiwoom = KiwoomAPI()
     kiwoom.login()
-    while not kiwoom.connected:
-        app_instance.processEvents()
-
-    print("[INFO] Kiwoom API initialized. Starting HTTP server...")
+    kiwoom.fetch_stock_list()
 
     # HTTP 서버 실행
     server = HTTPServer(("0.0.0.0", 5000), RequestHandler)
     server_thread = Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
 
-    # PyQt5 이벤트 루프 실행
-    app_instance.exec_()
+    # ActiveX 이벤트 루프 실행
+    while True:
+        pythoncom.PumpWaitingMessages()
+
 
 if __name__ == "__main__":
     initialize_kiwoom()
