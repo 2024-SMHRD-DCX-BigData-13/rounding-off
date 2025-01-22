@@ -15,33 +15,14 @@ let chartData = { timestamps: [], prices: [] }; // 기존 데이터를 저장
 let isFirstRequest = true; // 첫 번째 요청 여부 플래그
 let lastTimestamp = null; // 이전 데이터의 마지막 타임스탬프 저장
 
-// 5분 단위로 데이터를 필터링하는 함수
-function filterFiveMinuteData(timestamps, prices) {
-  const filteredTimestamps = [];
-  const filteredPrices = [];
-  let lastTime = null;
+// 오늘과 어제 날짜를 "YYYY-MM-DD" 형식으로 가져오는 함수
+function getTodayAndYesterdayDates() {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1); // 어제 날짜 계산
 
-  timestamps.forEach((timestamp, index) => {
-    const currentTime = new Date(timestamp);
-
-    // 첫 데이터는 추가
-    if (!lastTime) {
-      filteredTimestamps.push(timestamp);
-      filteredPrices.push(prices[index]);
-      lastTime = currentTime;
-      return;
-    }
-
-    // 5분 간격 조건 확인
-    const timeDiff = (currentTime - lastTime) / 1000 / 60; // 분 단위 계산
-    if (timeDiff >= 5) {
-      filteredTimestamps.push(timestamp);
-      filteredPrices.push(prices[index]);
-      lastTime = currentTime;
-    }
-  });
-
-  return { timestamps: filteredTimestamps, prices: filteredPrices };
+  const formatDate = (date) => date.toISOString().split('T')[0]; // "YYYY-MM-DD" 형식으로 변환
+  return { today: formatDate(today), yesterday: formatDate(yesterday) };
 }
 
 // 오늘과 어제 데이터를 포함하도록 필터링하는 함수
@@ -60,14 +41,33 @@ function filterTodayAndYesterdayData(timestamps, prices) {
   return { timestamps: filteredTimestamps, prices: filteredPrices };
 }
 
-// 오늘과 어제 날짜를 "YYYY-MM-DD" 형식으로 가져오는 함수
-function getTodayAndYesterdayDates() {
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1); // 어제 날짜 계산
+// 5분 단위로 데이터를 필터링하는 함수
+function filterFiveMinuteData(timestamps, prices) {
+  const filteredTimestamps = [];
+  const filteredPrices = [];
+  let lastTime = null;
 
-  const formatDate = (date) => date.toISOString().split('T')[0]; // "YYYY-MM-DD" 형식으로 변환
-  return { today: formatDate(today), yesterday: formatDate(yesterday) };
+  timestamps.forEach((timestamp, index) => {
+    const currentTime = new Date(timestamp);
+
+    // 첫 데이터는 무조건 추가
+    if (!lastTime) {
+      filteredTimestamps.push(timestamp);
+      filteredPrices.push(prices[index]);
+      lastTime = currentTime;
+      return;
+    }
+
+    // 시간 차이 계산 (단위: 분)
+    const timeDiff = (currentTime - lastTime) / 1000 / 60;
+    if (timeDiff >= 5) {
+      filteredTimestamps.push(timestamp);
+      filteredPrices.push(prices[index]);
+      lastTime = currentTime; // 마지막 시간 갱신
+    }
+  });
+
+  return { timestamps: filteredTimestamps, prices: filteredPrices };
 }
 
 // 차트 데이터를 업데이트하는 함수
@@ -193,33 +193,6 @@ const fetchInterval = setInterval(fetchStockData, 300000);
 // 페이지 로드 시 초기 데이터를 요청합니다.
 fetchStockData();
 
-
-
-// 서버에서 데이터를 가져오는 함수
-async function fetchStockData() {
-  try {
-    // 첫 번째 요청에서는 모든 데이터를 가져옵니다.
-    const endpoint = isFirstRequest 
-      ? `/api/stocks/${stockId}/all`  // 모든 데이터를 가져오는 엔드포인트
-      : `/api/stocks/${stockId}/latest`; // 최신 데이터를 가져오는 엔드포인트
-
-    const response = await fetch(endpoint);
-    const newData = await response.json();
-
-    console.log("Fetched Data:", newData); // 가져온 데이터 출력
-    updateChart(newData); // 가져온 데이터를 사용하여 차트를 업데이트합니다.
-
-    isFirstRequest = false; // 첫 번째 요청 완료 플래그 설정
-  } catch (error) {
-    console.error('Error fetching stock data:', error); // 에러 로그 출력
-  }
-}
-
-// 20초마다 데이터를 요청하고 차트를 업데이트합니다.
-setInterval(fetchStockData, 20000);
-
-// 페이지 로드 시 초기 데이터를 요청합니다.
-fetchStockData();
 
 
 
