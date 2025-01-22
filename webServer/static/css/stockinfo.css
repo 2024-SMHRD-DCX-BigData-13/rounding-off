@@ -86,6 +86,13 @@ form.custom-section {
   font-weight: bold;
   box-shadow: none;
 }
+form.custom-section{
+  display: block;
+  vertical-align: middle;
+  align-items: center;
+}
+
+
 
 /* ===================== 차트 고정 크기 및 비율 수정 ===================== */
 .chart-container {
@@ -126,6 +133,13 @@ canvas {
   border-top: 1px solid var(--border-color);
   text-align: center;
   margin-top: auto; /* 푸터 하단 고정 */
+  position:fixed;
+  bottom:0;
+  width: 100%;
+}
+.custom-footer p {
+  font-size: 16px;
+  font-weight: normal;
 }
 
 .form-select {
@@ -147,6 +161,8 @@ canvas {
 
 .text-center{
   font-weight: bold;
+  font-size: 30px;
+  margin-top: 20px;
 }
 
 #totalAmount{
@@ -195,4 +211,60 @@ canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.logomm {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  align-items: center;
+  justify-items: center;
+  margin-right: 20px;
+}
+
+#choicelogo{
+  width: 38px;
+  height: 38px;
+  margin-bottom: 8px;
+  margin-right: 15px;
+  border-radius: 10px;
+}
+
+/* 로딩 화면 스타일 */
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  --background-color: #18181b; /* 메인 배경색 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* 가장 위에 표시되도록 설정 */
+}
+
+/* 로딩 애니메이션 */
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3; /* 회색 테두리 */
+  border-top: 5px solid #3498db; /* 파란색 테두리 */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 스피너 애니메이션 */
+@keyframes spin {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}
+
+#lodingW {
+  margin-top : 15px;
 }

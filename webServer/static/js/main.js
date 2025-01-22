@@ -98,9 +98,9 @@ document.addEventListener("DOMContentLoaded", function () {
         
         row.innerHTML = `
           <td style="text-align: center; vertical-align: middle; width: 10%;">${startIndex + index + 1}</td>
-          <td style="text-align: center; vertical-align: middle; width: 35%;"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
+          <td style="text-align: center; vertical-align: middle; width: 30%;"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
           <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["현재가"]}</td>
-          <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["거래량"]}</td>
+          <td style="text-align: center; vertical-align: middle; width: 20%;">${stock["거래량"]}</td>
           <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${stock["예측(다음날)"]}</td>
         `;
   
