@@ -92,7 +92,7 @@ form.custom-section {
   position: relative;
   width: 100%;
   max-width: 700px;
-  height: 350px;
+  height: 600px;
   margin: 0 auto;
   padding: 10px;
   border-radius: 12px;
@@ -100,8 +100,8 @@ form.custom-section {
 canvas {
   width: 100% !important;
   height: 100% !important;
-  max-height: 350px !important;
-  max-width: 700px !important;
+  max-height: 600px !important;
+  max-width: 800px !important;
   display: block;
   box-sizing: border-box;
 }

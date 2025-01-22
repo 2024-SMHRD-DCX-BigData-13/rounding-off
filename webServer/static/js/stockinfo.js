@@ -2,6 +2,153 @@ document.getElementById('logo').addEventListener('click', function () {
   window.location.href = '/';
 });
 
+// URL 파라미터에서 stockId를 가져옵니다.
+const params = new URLSearchParams(window.location.search);
+const stockId = params.get("id");
+
+// 차트를 렌더링할 canvas 요소의 2D 컨텍스트를 가져옵니다.
+const ctx = document.getElementById('stockChart').getContext('2d');
+
+// Chart.js 차트 초기화 변수 및 데이터 저장소
+let myChart;
+let chartData = { timestamps: [], prices: [] }; // 기존 데이터를 저장
+let isFirstRequest = true; // 첫 번째 요청 여부 플래그
+
+// 오늘과 어제 날짜를 "YYYY-MM-DD" 형식으로 가져오는 함수
+function getTodayAndYesterdayDates() {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1); // 어제 날짜 계산
+
+  const formatDate = (date) => date.toISOString().split('T')[0]; // "YYYY-MM-DD" 형식으로 변환
+  return { today: formatDate(today), yesterday: formatDate(yesterday) };
+}
+
+// 오늘과 어제 데이터를 포함하도록 필터링하는 함수
+function filterTodayAndYesterdayData(timestamps, prices) {
+  const { today, yesterday } = getTodayAndYesterdayDates(); // 오늘과 어제 날짜 가져오기
+
+  const filteredTimestamps = [];
+  const filteredPrices = [];
+  timestamps.forEach((timestamp, index) => {
+    if (timestamp.startsWith(today) || timestamp.startsWith(yesterday)) {
+      filteredTimestamps.push(timestamp);
+      filteredPrices.push(prices[index]);
+    }
+  });
+
+  return { timestamps: filteredTimestamps, prices: filteredPrices };
+}
+
+// y축 범위를 계산하는 함수 (최고가 +2000, 최저가 -2000)
+function calculateYAxisRange(prices) {
+  if (prices.length === 0) return { min: 0, max: 2000 }; // 데이터가 없을 경우 기본값 설정
+  const maxPrice = Math.max(...prices);
+  const minPrice = Math.min(...prices);
+  return { min: Math.max(0, minPrice - 2000), max: maxPrice + 2000 }; // 최소값은 0 이상
+}
+
+// 차트 데이터를 업데이트하는 함수
+function updateChart(newData) {
+  console.log("Updating Chart with:", newData.timestamps, newData.prices);
+
+  // 오늘과 어제 데이터를 포함하도록 필터링
+  const filteredData = filterTodayAndYesterdayData(newData.timestamps, newData.prices);
+
+  if (isFirstRequest) {
+    // 처음 요청일 때 필터링된 데이터를 추가
+    chartData.timestamps = filteredData.timestamps;
+    chartData.prices = filteredData.prices;
+  } else {
+    // 이후 요청에서는 새 데이터를 추가
+    chartData.timestamps.push(...filteredData.timestamps);
+    chartData.prices.push(...filteredData.prices);
+  }
+
+  // y축 범위 계산
+  const { min: yMin, max: yMax } = calculateYAxisRange(chartData.prices);
+
+  if (!myChart) {
+    console.log("Initializing Chart...");
+    myChart = new Chart(ctx, {
+      type: 'line', // 차트 타입: 선 그래프
+      data: {
+        labels: chartData.timestamps, // x축 라벨
+        datasets: [{
+          data: chartData.prices, // 데이터 배열
+          borderColor: 'rgba(75, 192, 192, 1)', // 선 색상
+          borderWidth: 2, // 선 두께
+          pointRadius: 0 // 점 제거
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            display: false // 상단 라벨 숨기기
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true, // x축 타이틀 표시
+              text: 'Time' // x축 타이틀 텍스트
+            },
+            ticks: {
+              display: false // x축 텍스트 숨기기
+            }
+          },
+          y: {
+            title: {
+              display: true, // y축 타이틀 표시
+              text: 'Price' // y축 타이틀 텍스트
+            },
+            min: yMin, // y축 최소값
+            max: yMax  // y축 최대값
+          }
+        }
+      }
+    });
+  } else {
+    console.log("Updating Existing Chart...");
+    myChart.data.labels = chartData.timestamps; // x축 라벨 업데이트
+    myChart.data.datasets[0].data = chartData.prices; // y축 데이터 업데이트
+
+    // y축 범위 동적으로 업데이트
+    myChart.options.scales.y.min = yMin;
+    myChart.options.scales.y.max = yMax;
+
+    myChart.update(); // 차트 업데이트 적용
+  }
+}
+
+// 서버에서 데이터를 가져오는 함수
+async function fetchStockData() {
+  try {
+    // 첫 번째 요청에서는 모든 데이터를 가져옵니다.
+    const endpoint = isFirstRequest 
+      ? `/api/stocks/${stockId}/all`  // 모든 데이터를 가져오는 엔드포인트
+      : `/api/stocks/${stockId}/latest`; // 최신 데이터를 가져오는 엔드포인트
+
+    const response = await fetch(endpoint);
+    const newData = await response.json();
+
+    console.log("Fetched Data:", newData); // 가져온 데이터 출력
+    updateChart(newData); // 가져온 데이터를 사용하여 차트를 업데이트합니다.
+
+    isFirstRequest = false; // 첫 번째 요청 완료 플래그 설정
+  } catch (error) {
+    console.error('Error fetching stock data:', error); // 에러 로그 출력
+  }
+}
+
+// 20초마다 데이터를 요청하고 차트를 업데이트합니다.
+setInterval(fetchStockData, 20000);
+
+// 페이지 로드 시 초기 데이터를 요청합니다.
+fetchStockData();
+
+
+
 // 주문 기능: 총 주문 금액 계산
 function placeOrder() {
   const price = parseFloat(document.getElementById('buyPrice').value);
@@ -11,78 +158,6 @@ function placeOrder() {
     total.toLocaleString() + '원';
   alert('주문이 완료되었습니다!');
 }
-const ctx = document.getElementById('stockChart').getContext('2d');
-
-// 샘플 데이터 및 상승/하락을 반영한 데이터
-const labels = ['1월', '2월', '3월', '4월', '5월'];
-const dataPoints = [70000, 72000, 68000, 69000, 71000];
-
-// 상승/하락 색상을 자동으로 적용
-const barColors = dataPoints.map((value, index) => {
-  if (index === 0) {
-    return 'rgba(255, 99, 132, 0.8)'; // 첫 데이터는 상승으로 간주
-  }
-  return value > dataPoints[index - 1]
-    ? 'rgba(255, 99, 132, 0.8)' // 상승: 빨강
-    : 'rgba(54, 162, 235, 0.8)'; // 하락: 파랑
-});
-
-// 차트 생성
-const stockChart = new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: labels,
-    datasets: [
-      {
-        label: '주가 변동 (막대)',
-        data: dataPoints,
-        backgroundColor: barColors,
-        borderColor: barColors.map((color) => color.replace('0.8', '1')),
-        borderWidth: 1,
-      },
-      {
-        label: '종가 (라인)',
-        data: dataPoints,
-        type: 'line',
-        borderColor: '#ffffff',
-        borderWidth: 2,
-        pointBackgroundColor: '#ffffff',
-        pointRadius: 5,
-        fill: false,
-      },
-    ],
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: false,
-        grid: {
-          color: '#3a3b3d',
-        },
-        ticks: {
-          color: '#e4e4e7',
-        },
-      },
-      x: {
-        grid: {
-          color: '#3a3b3d',
-        },
-        ticks: {
-          color: '#e4e4e7',
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        labels: {
-          color: '#e4e4e7',
-        },
-      },
-    },
-  },
-});
 
 document.addEventListener("DOMContentLoaded", async () => {
   // URL 파라미터에서 'id' 값 가져오기
@@ -281,70 +356,4 @@ document.addEventListener("DOMContentLoaded", () => {
   syncFavoriteState();
 });
 
-  // 매매 기능 예시
-document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  const stockId = params.get('id');
-  if (!stockId) {
-    console.error("주식 코드가 URL에 없습니다.");
-    return;
-  }
 
-  const socket = new WebSocket("ws://127.0.0.1:8001/ws/order");
-
-  socket.onopen = () => {
-    console.log("[INFO] WebSocket 연결 성공");
-  };
-
-  socket.onmessage = (event) => {
-    try {
-      const result = JSON.parse(event.data);
-      if (result.status === "completed") {
-        alert("주문 완료: " + JSON.stringify(result.details));
-      } else if (result.status.includes("_fail")) {
-        alert("주문 실패: " + result.message);
-      } else if (result.status.includes("_wait")) {
-        alert("주문 대기 중...");
-      } else {
-        alert("알 수 없는 상태: " + result.status);
-      }
-    } catch (error) {
-      console.error("[ERROR] WebSocket 메시지 처리 중 오류 발생:", error.message);
-    }
-  };
-
-  socket.onerror = (error) => {
-    console.error("[ERROR] WebSocket 오류 발생:", error);
-  };
-
-  socket.onclose = () => {
-    console.log("[INFO] WebSocket 연결이 종료되었습니다.");
-  };
-
-  async function placeOrder() {
-    const orderType = document.getElementById("orderType").value;
-    const buyPrice = parseFloat(document.getElementById("buyPrice").value || 0);
-    const quantity = parseInt(document.getElementById("quantity").value || 0);
-
-    if (buyPrice <= 0 || quantity <= 0) {
-      alert("유효한 가격과 수량을 입력해주세요.");
-      return;
-    }
-
-    const orderData = {
-      stock_id: stockId,
-      order_type: orderType,
-      buy_price: buyPrice,
-      quantity: quantity,
-    };
-
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(orderData));
-      console.log("[INFO] 주문 데이터 전송:", orderData);
-    } else {
-      alert("WebSocket 연결이 닫혀 있습니다.");
-    }
-  }
-
-  window.placeOrder = placeOrder;
-});

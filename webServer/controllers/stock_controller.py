@@ -396,3 +396,68 @@ async def get_favorites(fav_request: FavoriteCheck):
         if connection and connection.is_connected():
             cursor.close()
             connection.close()
+
+def get_all_stock_data(stock_id: str):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        query = """
+        SELECT create_at, current_price
+        FROM realtime_stocks
+        WHERE stock_idx = %s
+        ORDER BY create_at ASC
+        """
+        cursor.execute(query, (stock_id,))
+        rows = cursor.fetchall()
+        conn.close()
+
+        # 데이터 정리
+        timestamps = [row[0].strftime('%Y-%m-%d %H:%M:%S') for row in rows]
+        prices = [float(row[1]) for row in rows]
+
+        return {"timestamps": timestamps, "prices": prices}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch all stock data: {str(e)}")
+
+# 최신 데이터를 가져오는 함수
+def get_latest_stock_data(stock_id: str):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        query = """
+        SELECT create_at, current_price
+        FROM realtime_stocks
+        WHERE stock_idx = %s
+        ORDER BY create_at DESC
+        LIMIT 1
+        """
+        cursor.execute(query, (stock_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="No latest stock data found")
+
+        # 데이터 정리
+        timestamps = [row[0].strftime('%Y-%m-%d %H:%M:%S')]
+        prices = [float(row[1])]
+
+        return {"timestamps": timestamps, "prices": prices}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch latest stock data: {str(e)}")
+
+# 모든 데이터 반환 엔드포인트
+@router.get("/api/stocks/{stock_id}/all")
+async def get_all_stocks(stock_id: str):
+    data = get_all_stock_data(stock_id)
+    if not data["timestamps"]:  # 데이터가 없는 경우
+        raise HTTPException(status_code=404, detail="Stock data not found")
+    return JSONResponse(content=data)
+
+# 최신 데이터 반환 엔드포인트
+@router.get("/api/stocks/{stock_id}/latest")
+async def get_latest_stock(stock_id: str):
+    data = get_latest_stock_data(stock_id)
+    if not data["timestamps"]:  # 데이터가 없는 경우
+        raise HTTPException(status_code=404, detail="Stock data not found")
+    return JSONResponse(content=data)
