@@ -327,39 +327,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const email = await fetchUserEmail();
     if (!email) {
-      alert("사용자 이메일을 가져오는 데 실패했습니다.");
-      return;
+      alert("로그인이 필요합니다!");
+      window.location.href = '/login';
     }
+    else {
+      try {
+        const response = await fetch(`/api/check-favorite`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ email, stock_id: stockId }),
+        });
 
-    try {
-      const response = await fetch(`/api/check-favorite`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, stock_id: stockId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.status === "success") {
-        if (data.isFavorite) {
-          favoriteButton.classList.add("active");
-        } else {
-          favoriteButton.classList.remove("active");
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-      } else {
-        alert(`상태 동기화 실패: ${data.message}`);
+
+        const data = await response.json();
+        if (data.status === "success") {
+          if (data.isFavorite) {
+            favoriteButton.classList.add("active");
+          } else {
+            favoriteButton.classList.remove("active");
+          }
+        } else {
+          alert(`상태 동기화 실패: ${data.message}`);
+        }
+      } catch (error) {
+        alert(`상태 동기화 중 오류 발생: ${error.message}`);
       }
-    } catch (error) {
-      alert(`상태 동기화 중 오류 발생: ${error.message}`);
     }
   }
-
   // 즐겨찾기 버튼 클릭 이벤트
   favoriteButton.addEventListener("click", async () => {
     if (!stockId) {
@@ -414,12 +414,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.isLoggedIn) {
         return data.user.email;
       } else {
-        alert("로그인이 필요합니다.");
-        return null;
       }
     } catch (error) {
-      alert(`사용자 이메일 가져오기 중 오류 발생: ${error.message}`);
-      return null;
     }
   }
 
@@ -428,7 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function stockLogo (stockName){
+function stockLogo(stockName) {
   const logoMapping = {
     "삼성전자": "logo1.png",
     "삼성SDI": "logo1.png",
@@ -459,16 +455,16 @@ function stockLogo (stockName){
 
 // 로딩창 
 const tdV = document.getElementById('stock-name');
-function loding () {
-  if (tdV.textContent.trim() !== ""){
+function loding() {
+  if (tdV.textContent.trim() !== "") {
     const loading = document.getElementById("loading");
     const content = document.getElementById("content");
     loading.style.display = "none"; // 로딩 화면 숨김
     content.style.display = "block"; // 실제 콘텐츠 표시
- }
+  }
 }
 const observer = new MutationObserver(loding);
-observer.observe(tdV, { childList: true, subtree: true, characterData: true});
+observer.observe(tdV, { childList: true, subtree: true, characterData: true });
 
 
 
