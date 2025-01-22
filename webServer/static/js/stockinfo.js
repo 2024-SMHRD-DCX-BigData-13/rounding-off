@@ -78,8 +78,6 @@ function updateChart(newData) {
         }]
       },
       options: {
-        responsive: true, // 차트를 캔버스 크기에 맞게 조정
-        maintainAspectRatio: false, // 차트의 고정 비율 유지 여부
         plugins: {
           legend: {
             display: false // 상단 라벨 숨기기
