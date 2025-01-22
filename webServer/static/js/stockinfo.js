@@ -102,7 +102,7 @@ function updateChart(newData) {
         labels: chartData.timestamps, // x축 라벨
         datasets: [{
           data: chartData.prices, // 데이터 배열
-          borderColor: 'rgba(75, 192, 192, 1)', // 선 색상
+          borderColor: 'rgb(175, 77, 77)', // 선 색상
           borderWidth: 2, // 선 두께
           pointRadius: 0 // 점 제거
         }]
