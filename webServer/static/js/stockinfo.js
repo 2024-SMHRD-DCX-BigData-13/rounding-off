@@ -174,109 +174,177 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 초기 상태 동기화
   async function syncFavoriteState() {
-      if (!stockId) {
-          alert("Stock ID가 URL에 없습니다.");
-          return;
+    if (!stockId) {
+      alert("Stock ID가 URL에 없습니다.");
+      return;
+    }
+
+    const email = await fetchUserEmail();
+    if (!email) {
+      alert("사용자 이메일을 가져오는 데 실패했습니다.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/check-favorite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, stock_id: stockId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const email = await fetchUserEmail();
-      if (!email) {
-          alert("사용자 이메일을 가져오는 데 실패했습니다.");
-          return;
+      const data = await response.json();
+      if (data.status === "success") {
+        if (data.isFavorite) {
+          favoriteButton.classList.add("active");
+        } else {
+          favoriteButton.classList.remove("active");
+        }
+      } else {
+        alert(`상태 동기화 실패: ${data.message}`);
       }
-
-      try {
-          const response = await fetch(`/api/check-favorite`, {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              credentials: "include",
-              body: JSON.stringify({ email, stock_id: stockId }),
-          });
-
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-
-          const data = await response.json();
-          if (data.status === "success") {
-              if (data.isFavorite) {
-                  favoriteButton.classList.add("active");
-              } else {
-                  favoriteButton.classList.remove("active");
-              }
-          } else {
-              alert(`상태 동기화 실패: ${data.message}`);
-          }
-      } catch (error) {
-          alert(`상태 동기화 중 오류 발생: ${error.message}`);
-      }
+    } catch (error) {
+      alert(`상태 동기화 중 오류 발생: ${error.message}`);
+    }
   }
 
   // 즐겨찾기 버튼 클릭 이벤트
   favoriteButton.addEventListener("click", async () => {
-      if (!stockId) {
-          alert("Stock ID가 URL에 없습니다.");
-          return;
+    if (!stockId) {
+      alert("Stock ID가 URL에 없습니다.");
+      return;
+    }
+
+    const isActive = favoriteButton.classList.contains("active");
+    const endpoint = isActive ? "/fav_delete" : "/fav_insert";
+    const email = await fetchUserEmail();
+    if (!email) {
+      alert("사용자 이메일을 가져오는 데 실패했습니다.");
+      return;
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, stock_id: stockId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        favoriteButton.classList.toggle("active");
+        alert(isActive ? "즐겨찾기에서 삭제되었습니다." : "즐겨찾기에 추가되었습니다.");
+      } else {
+        alert(`즐겨찾기 ${isActive ? "삭제" : "추가"} 실패: ${data.message}`);
       }
-
-      const isActive = favoriteButton.classList.contains("active");
-      const endpoint = isActive ? "/fav_delete" : "/fav_insert";
-      const email = await fetchUserEmail();
-      if (!email) {
-          alert("사용자 이메일을 가져오는 데 실패했습니다.");
-          return;
-      }
-
-      try {
-          const response = await fetch(endpoint, {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              credentials: "include",
-              body: JSON.stringify({ email, stock_id: stockId }),
-          });
-
-          const data = await response.json();
-
-          if (response.ok && data.status === "success") {
-              favoriteButton.classList.toggle("active");
-              alert(isActive ? "즐겨찾기에서 삭제되었습니다." : "즐겨찾기에 추가되었습니다.");
-          } else {
-              alert(`즐겨찾기 ${isActive ? "삭제" : "추가"} 실패: ${data.message}`);
-          }
-      } catch (error) {
-          alert(`즐겨찾기 요청 중 오류 발생: ${error.message}`);
-      }
+    } catch (error) {
+      alert(`즐겨찾기 요청 중 오류 발생: ${error.message}`);
+    }
   });
 
   // 사용자 이메일 가져오기
   async function fetchUserEmail() {
-      try {
-          const response = await fetch("/api/check-login", {
-              method: "GET",
-              credentials: "include",
-          });
+    try {
+      const response = await fetch("/api/check-login", {
+        method: "GET",
+        credentials: "include",
+      });
 
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-
-          const data = await response.json();
-          if (data.isLoggedIn) {
-              return data.user.email;
-          } else {
-              alert("로그인이 필요합니다.");
-              return null;
-          }
-      } catch (error) {
-          alert(`사용자 이메일 가져오기 중 오류 발생: ${error.message}`);
-          return null;
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
+      const data = await response.json();
+      if (data.isLoggedIn) {
+        return data.user.email;
+      } else {
+        alert("로그인이 필요합니다.");
+        return null;
+      }
+    } catch (error) {
+      alert(`사용자 이메일 가져오기 중 오류 발생: ${error.message}`);
+      return null;
+    }
   }
 
   // 페이지 로드 시 즐겨찾기 상태 동기화
   syncFavoriteState();
+});
+
+  // 매매 기능 예시
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const stockId = params.get('id');
+  if (!stockId) {
+    console.error("주식 코드가 URL에 없습니다.");
+    return;
+  }
+
+  const socket = new WebSocket("ws://127.0.0.1:8001/ws/order");
+
+  socket.onopen = () => {
+    console.log("[INFO] WebSocket 연결 성공");
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const result = JSON.parse(event.data);
+      if (result.status === "completed") {
+        alert("주문 완료: " + JSON.stringify(result.details));
+      } else if (result.status.includes("_fail")) {
+        alert("주문 실패: " + result.message);
+      } else if (result.status.includes("_wait")) {
+        alert("주문 대기 중...");
+      } else {
+        alert("알 수 없는 상태: " + result.status);
+      }
+    } catch (error) {
+      console.error("[ERROR] WebSocket 메시지 처리 중 오류 발생:", error.message);
+    }
+  };
+
+  socket.onerror = (error) => {
+    console.error("[ERROR] WebSocket 오류 발생:", error);
+  };
+
+  socket.onclose = () => {
+    console.log("[INFO] WebSocket 연결이 종료되었습니다.");
+  };
+
+  async function placeOrder() {
+    const orderType = document.getElementById("orderType").value;
+    const buyPrice = parseFloat(document.getElementById("buyPrice").value || 0);
+    const quantity = parseInt(document.getElementById("quantity").value || 0);
+
+    if (buyPrice <= 0 || quantity <= 0) {
+      alert("유효한 가격과 수량을 입력해주세요.");
+      return;
+    }
+
+    const orderData = {
+      stock_id: stockId,
+      order_type: orderType,
+      buy_price: buyPrice,
+      quantity: quantity,
+    };
+
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(orderData));
+      console.log("[INFO] 주문 데이터 전송:", orderData);
+    } else {
+      alert("WebSocket 연결이 닫혀 있습니다.");
+    }
+  }
+
+  window.placeOrder = placeOrder;
 });
