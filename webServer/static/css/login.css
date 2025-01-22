@@ -56,9 +56,10 @@ body {
 }
 
 .login-title {
-  font-size: 1.8em;
+  font-size: calc(1.325rem + .9vw);
   text-align: center;
   margin-bottom: 20px;
+  font-weight: bold;
 }
 
 .form-group {
