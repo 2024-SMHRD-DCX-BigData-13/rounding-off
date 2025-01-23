@@ -205,6 +205,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   
   document.addEventListener('DOMContentLoaded', () => {
+    let isFetchingFavorites = false; // 중복 요청 방지 플래그
+  
     // 서버에서 로그인 상태 확인
     fetch('/api/check-login')
       .then((response) => response.json())
@@ -229,6 +231,10 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error('Error:', error));
   
     async function fetchFavorites(email) {
+      // 중복 요청 방지
+      if (isFetchingFavorites) return;
+      isFetchingFavorites = true;
+  
       const favoritesContainer = document.querySelector('#favorites .card-container');
   
       try {
@@ -252,19 +258,31 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       } catch (error) {
         console.error('Error fetching favorites:', error.message);
+      } finally {
+        isFetchingFavorites = false; // 요청 완료 후 플래그 초기화
       }
     }
   
     function renderFavorites(favorites, container) {
       container.innerHTML = ''; // 기존 데이터 초기화
-    
-      favorites.forEach((favorite) => {
+  
+      // 중복 제거: Set을 사용해 고유한 stock_idx만 남김
+      const seen = new Set();
+      const uniqueFavorites = favorites.filter((favorite) => {
+        if (seen.has(favorite.stock_idx)) {
+          return false; // 중복된 항목은 필터링
+        }
+        seen.add(favorite.stock_idx);
+        return true; // 고유한 항목만 반환
+      });
+  
+      uniqueFavorites.forEach((favorite) => {
         const card = document.createElement('div');
         card.className = 'card';
-    
+  
         // 숫자 형식 지정 (쉼표 추가)
         const formattedPrice = new Intl.NumberFormat('ko-KR').format(favorite.current_price);
-    
+  
         // 예측값 포맷 수정: 소수점을 제거하고 "원" 추가
         let formattedPrediction = favorite.prediction.replace(
           /([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/,
@@ -272,13 +290,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return `${parseInt(value, 10)}원 (${percent})`;
           }
         );
-    
+  
         // 클릭 이벤트를 추가하여 stockinfo 페이지로 이동
         card.addEventListener('click', () => {
           const encodedId = encodeURIComponent(favorite.stock_idx); // ID 인코딩
           window.location.href = `stockinfo?id=${encodedId}`;
         });
-    
+  
         card.innerHTML = `
           <div class="title">
             <div class="logoN">
@@ -294,8 +312,8 @@ document.addEventListener("DOMContentLoaded", function () {
         container.appendChild(card);
       });
     }
-    
   });
+  
 
  // 로딩창 
 
