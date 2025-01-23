@@ -65,7 +65,7 @@ def train_and_predict(stock_idx):
         data.fillna(method='bfill', inplace=True)
 
         # 훈련 및 테스트 데이터 분리
-        train_size = int(len(data) * 0.8)
+        train_size = int(len(data) * 0.7)
         train_data = data.iloc[:train_size]
         test_data = data.iloc[train_size:]
 
@@ -76,7 +76,7 @@ def train_and_predict(stock_idx):
         exog_test = test_data[exog_columns]
 
         # ARIMA 모델 최적화 (Grid Search)
-        p = d = q = range(0, 3)
+        p = d = q = range(0, 4)
         pdq = list(itertools.product(p, d, q))
         best_aic = float("inf")
         best_order = None

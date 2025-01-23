@@ -164,8 +164,16 @@ def periodic_save_real_data(kiwoom, interval=5):
     while True:
         time.sleep(interval)
 
+        # 실시간 데이터가 없거나 장이 닫혀 있으면 저장하지 않음
         if not kiwoom.real_data:
             print("[INFO] No real-time data available. Skipping database save.")
+            continue
+
+        # 장 종료 시간 이후 데이터 저장 방지
+        now = datetime.datetime.now()
+        market_close_time = now.replace(hour=15, minute=30, second=0, microsecond=0)
+        if now > market_close_time:
+            print("[INFO] Market is closed. Skipping real-time data save.")
             continue
 
         try:
@@ -187,6 +195,7 @@ def periodic_save_real_data(kiwoom, interval=5):
         finally:
             cursor.close()
             connection.close()
+
 
 
 def periodic_save_daily_data(kiwoom):
