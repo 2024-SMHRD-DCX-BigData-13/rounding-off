@@ -1,3 +1,32 @@
+function stockLogo(stockName) {
+  const logoMapping = {
+    "삼성전자": "logo1.png",
+    "삼성SDI": "logo1.png",
+    "삼성바이오로직스": "logo1.png",
+    "SK하이닉스": "logo2.png",
+    "SK이노베이션": "logo2.png",
+    "LG화학": "logo3.png",
+    "LG전자": "logo3.png",
+    "CJ대한통운": "logo4.png",
+    "NAVER": "logo5.png",
+    "HMM": "logo6.png",
+    "POSCO홀딩스": "logo7.png",
+    "기아": "logo8.png",
+    "두산에너빌리티": "logo9.png",
+    "셀트리온": "logo10.png",
+    "카카오": "logo11.png",
+    "카카오뱅크": "logo12.png",
+    "한국전력": "logo13.png",
+    "한화솔루션": "logo14.png",
+    "현대모비스": "logo15.png",
+    "현대자동차": "logo16.png"
+  };
+  const path = "../static/img/"
+  const logoC = logoMapping[stockName] || 'red.png';
+  const plus = path + logoC;
+  return plus;
+}
+
 document.getElementById('logo').addEventListener('click', function () {
   window.location.href = '/';
 });
@@ -327,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
                   const row = document.createElement("tr")
 
                   row.innerHTML = `
-                      <td>${stock["종목명"]}</td>
+                      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
                       <td>${stock["현재가"]}</td>
                       <td>${stock["평가손익"]}</td>
                       <td>${stock["매입단가"]}</td>
@@ -371,7 +400,7 @@ document.addEventListener("DOMContentLoaded", function () {
                   const row = document.createElement("tr");
                   row.innerHTML = `
                       <td>${trade["날짜"]}</td>
-                      <td>${trade["종목명"]}</td>
+                      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade["종목명"])}">${trade["종목명"]}</div></td>
                       <td>${trade["평가손익"]}</td>
                       <td>${trade["거래대금"]}</td>
                       <td>${trade["거래량"]}</td>
