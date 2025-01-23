@@ -84,34 +84,41 @@ document.addEventListener("DOMContentLoaded", function () {
     // 테이블 렌더링
     function renderStocksTable(page) {
       tableBody.innerHTML = ""; // 기존 데이터 초기화
-  
+    
       const startIndex = (page - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const stocksToDisplay = allStocks.slice(startIndex, endIndex);
-  
+    
       stocksToDisplay.forEach((stock, index) => {
         const row = document.createElement("tr");
         row.className = "stockInfo";
         row.dataset.current = stock["현재가"];
         row.id = stock["종목명"];
-        const prediction = stock["예측(다음날)"];
+    
+        // 예측값 포맷 수정
+        let prediction = stock["예측(다음날)"];
         const predictionClass = prediction.includes("+") ? "positive" : "negative";
-        
+    
+        // 숫자 부분과 % 부분 분리 및 소수점 제거
+        prediction = prediction.replace(/([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/, (match, value, percent) => {
+          return `${parseInt(value, 10)}원 (${percent})`;
+        });
+    
         row.innerHTML = `
           <td style="text-align: center; vertical-align: middle; width: 10%;">${startIndex + index + 1}</td>
           <td style="text-align: center; vertical-align: middle; width: 30%;"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
           <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["현재가"]}</td>
           <td style="text-align: center; vertical-align: middle; width: 20%;">${stock["거래량"]}</td>
-          <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${stock["예측(다음날)"]}</td>
+          <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${prediction}</td>
         `;
-  
+    
         // 클릭 이벤트 추가
         row.addEventListener("click", function () {
           const id = stock["종목코드"];
           const encodedId = encodeURIComponent(id);
           window.location.href = `/stockinfo?id=${encodedId}`;
         });
-  
+    
         tableBody.appendChild(row);
       });
     }
@@ -250,30 +257,44 @@ document.addEventListener("DOMContentLoaded", function () {
   
     function renderFavorites(favorites, container) {
       container.innerHTML = ''; // 기존 데이터 초기화
-  
+    
       favorites.forEach((favorite) => {
         const card = document.createElement('div');
         card.className = 'card';
-  
+    
         // 숫자 형식 지정 (쉼표 추가)
         const formattedPrice = new Intl.NumberFormat('ko-KR').format(favorite.current_price);
-  
+    
+        // 예측값 포맷 수정: 소수점을 제거하고 "원" 추가
+        let formattedPrediction = favorite.prediction.replace(
+          /([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/,
+          (match, value, percent) => {
+            return `${parseInt(value, 10)}원 (${percent})`;
+          }
+        );
+    
         // 클릭 이벤트를 추가하여 stockinfo 페이지로 이동
         card.addEventListener('click', () => {
           const encodedId = encodeURIComponent(favorite.stock_idx); // ID 인코딩
           window.location.href = `stockinfo?id=${encodedId}`;
         });
-  // <div id="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}"
+    
         card.innerHTML = `
-          <div class="title"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(favorite.stock_name)}"><p>${favorite.stock_name}</p></div></div>
+          <div class="title">
+            <div class="logoN">
+              <img class="stocklogo" alt="Stock Logo" src="${stockLogo(favorite.stock_name)}">
+              <p>${favorite.stock_name}</p>
+            </div>
+          </div>
           <p class="value">${formattedPrice}원</p>
-          <p class="change ${favorite.prediction.includes('+') ? 'positive' : 'negative'}">
-            ${favorite.prediction}
+          <p class="change ${formattedPrediction.includes('+') ? 'positive' : 'negative'}">
+            ${formattedPrediction}
           </p>
         `;
         container.appendChild(card);
       });
     }
+    
   });
 
  // 로딩창 

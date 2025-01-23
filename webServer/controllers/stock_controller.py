@@ -73,25 +73,23 @@ def get_stocks():
             current_price_row = cursor.fetchone()
             current_price = float(current_price_row[0]) if current_price_row else None
 
-            # 예측(다음날) 생성 (다양한 변동 비율 사용)
-            if current_price is not None:
-                if stock_idx not in prediction_cache:
-                    # 변동 비율: -5% ~ +10% 범위에서 선택
-                    change_percentage = random.choice([-5, -3, -1, 1, 3, 5, 7, 10])
-                    prediction = current_price + current_price * 0.01 * change_percentage
-                    formatted_prediction = f"{int(prediction):,}원 ({change_percentage:+}%)"
-                    prediction_cache[stock_idx] = formatted_prediction
-                else:
-                    formatted_prediction = prediction_cache[stock_idx]
-            else:
-                formatted_prediction = "데이터 없음"
+            # 최신 예측값 가져오기
+            cursor.execute("""
+                SELECT change_summary
+                FROM prediction_results
+                WHERE stock_idx = %s
+                ORDER BY created_at DESC
+                LIMIT 1
+            """, (stock_idx,))
+            prediction_row = cursor.fetchone()
+            prediction_summary = prediction_row[0] if prediction_row else "데이터 없음"
 
             stock_data.append({
-                "종목코드" : stock_idx,
+                "종목코드": stock_idx,
                 "종목명": stock_name,
                 "현재가": f"{int(current_price):,}원" if current_price is not None else "데이터 없음",
                 "거래량": f"{int(trade_volume):,}주" if trade_volume != "데이터 없음" else "데이터 없음",
-                "예측(다음날)": formatted_prediction
+                "예측(다음날)": prediction_summary
             })
 
         # JSON 형태로 반환
@@ -333,12 +331,13 @@ async def get_favorites(fav_request: FavoriteCheck):
         connection = create_connection()
         cursor = connection.cursor()
 
-        # 관심 종목 및 최신 현재가 가져오기
+        # 관심 종목, 최신 현재가 및 예측값 가져오기
         query = """
             SELECT 
                 s.stock_idx,
                 s.stock_name,
-                r.current_price
+                r.current_price,
+                p.change_summary
             FROM 
                 user_favorites f
             JOIN stocks s
@@ -356,6 +355,8 @@ async def get_favorites(fav_request: FavoriteCheck):
             JOIN realtime_stocks r
                 ON latest_r.stock_idx = r.stock_idx
                 AND latest_r.latest_create_at = r.create_at
+            LEFT JOIN prediction_results p
+                ON f.stock_idx = p.stock_idx
             WHERE 
                 f.email = %s;
         """
@@ -371,16 +372,13 @@ async def get_favorites(fav_request: FavoriteCheck):
             stock_idx = row[0]
             stock_name = row[1]
             current_price = float(row[2])  # Decimal을 float로 변환
-
-            # 고정된 예측값 계산 (예: +5%)
-            prediction = current_price + current_price * 0.05
-            prediction_str = f"{int(prediction):,}원 (+5%)"
+            prediction = row[3] if row[3] else "N/A"  # 예측값이 없을 경우 "N/A" 처리
 
             favorite_data.append({
-                "stock_idx" : stock_idx,
+                "stock_idx": stock_idx,
                 "stock_name": stock_name,
                 "current_price": int(current_price),
-                "prediction": prediction_str,
+                "prediction": prediction,
             })
 
         return JSONResponse(content={"status": "success", "data": favorite_data})
@@ -396,6 +394,7 @@ async def get_favorites(fav_request: FavoriteCheck):
         if connection and connection.is_connected():
             cursor.close()
             connection.close()
+
 
 def get_all_stock_data(stock_id: str):
     try:

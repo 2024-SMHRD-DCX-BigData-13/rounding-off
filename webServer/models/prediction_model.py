@@ -6,18 +6,20 @@ from sklearn.metrics import mean_squared_error
 import multiprocessing
 import warnings
 import itertools
+import datetime
 
 # 경고 무시
 warnings.filterwarnings("ignore")
 
+
 # 데이터베이스에서 특정 종목 데이터 로드
 def load_data_from_db(stock_idx):
     connection = mysql.connector.connect(
-        host='project-db-cgi.smhrd.com',         # MySQL 서버 주소 (기본 localhost)
-        port=3307,                # MySQL 서버 포트 (기본 3306, 다른 포트인 경우 변경)
-        database='mp_24K_DCX13_p3_2', # 연결할 데이터베이스 이름
-        user='mp_24K_DCX13_p3_2',     # MySQL 사용자명
-        password='smhrd2'  # MySQL 비밀번호
+        host='project-db-cgi.smhrd.com',
+        port=3307,
+        database='mp_24K_DCX13_p3_2',
+        user='mp_24K_DCX13_p3_2',
+        password='smhrd2'
     )
 
     query = f"""
@@ -31,6 +33,7 @@ def load_data_from_db(stock_idx):
     data = pd.DataFrame(cursor.fetchall())
     connection.close()
     return data
+
 
 # ARIMA 모델 학습 및 예측 함수
 def train_and_predict(stock_idx):
@@ -95,23 +98,66 @@ def train_and_predict(stock_idx):
         next_day_forecast_log = fitted_model.forecast(steps=1, exog=next_day_features)
         next_day_forecast = np.exp(next_day_forecast_log.iloc[0])
 
-        # 결과 출력
+        # 결과 계산
         current_price = np.exp(y_test.iloc[-1])
         price_change = next_day_forecast - current_price
         trend = "상승" if price_change > 0 else "하락"
+        percentage_change = (price_change / current_price) * 100
+        change_summary = f"{next_day_forecast} ({percentage_change:+.2f}%)"
 
         result = {
             "stock_idx": stock_idx,
             "current_price": current_price,
             "predicted_price": next_day_forecast,
             "trend": trend,
-            "change": price_change,
-            "percentage_change": (price_change / current_price) * 100
+            "change_summary": change_summary
         }
+
+        # 결과를 DB에 저장
+        save_to_db(result)
         return result
     except Exception as e:
         print(f"[ERROR] Stock: {stock_idx}, Error: {e}")
         return None
+
+
+# 결과를 데이터베이스에 저장
+def save_to_db(result):
+    try:
+        # MySQL 연결 설정
+        connection = mysql.connector.connect(
+            host='project-db-cgi.smhrd.com',
+            port=3307,
+            database='mp_24K_DCX13_p3_2',
+            user='mp_24K_DCX13_p3_2',
+            password='smhrd2'
+        )
+        cursor = connection.cursor()
+
+        # 기존 데이터 삭제 쿼리
+        delete_query = "DELETE FROM predictions WHERE stock_idx = %s"
+        cursor.execute(delete_query, (result['stock_idx'],))
+        print(f"[INFO] Existing data for stock_idx {result['stock_idx']} deleted.")
+
+        # 새로운 데이터 삽입 쿼리
+        insert_query = """
+        INSERT INTO prediction_results (stock_idx, change_summary, created_at)
+        VALUES (%s, %s, NOW())
+        """
+        values = (result['stock_idx'], result['change_summary'])
+        cursor.execute(insert_query, values)
+        connection.commit()
+
+        print(f"[INFO] Prediction for {result['stock_idx']} saved to DB: {result['change_summary']}")
+    except mysql.connector.Error as err:
+        print(f"[ERROR] Database save error: {err}")
+    finally:
+        # 연결 닫기
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
 
 # 메인 함수: 병렬 처리
 def main():
@@ -131,8 +177,8 @@ def main():
         if res:
             print(f"Stock: {res['stock_idx']}, Current: {res['current_price']:.2f}, "
                   f"Predicted: {res['predicted_price']:.2f}, "
-                  f"Trend: {res['trend']}, Change: {res['change']:.2f} "
-                  f"({res['percentage_change']:+.2f}%)")
+                  f"Trend: {res['trend']}, Change Summary: {res['change_summary']}")
+
 
 if __name__ == "__main__":
     main()

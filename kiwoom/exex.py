@@ -4,7 +4,8 @@ import datetime
 import threading
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QAxContainer import QAxWidget
-import mysql.connector
+from mysql.connector import pooling, Error
+
 
 def clean_price(raw_price):
     try:
@@ -13,8 +14,9 @@ def clean_price(raw_price):
         print(f"[ERROR] Invalid price format: {raw_price}")
         return 0
 
+
 class KiwoomAPI(QAxWidget):
-    def __init__(self, db_connection):
+    def __init__(self, db_pool):
         super().__init__()
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.connected = False
@@ -22,7 +24,7 @@ class KiwoomAPI(QAxWidget):
         self.data = []
         self.current_stock = None
         self.stock_list = []
-        self.db_connection = db_connection
+        self.db_pool = db_pool  # MySQL 연결 풀
 
         # 이벤트 연결
         self.OnEventConnect.connect(self._on_event_connect)
@@ -41,14 +43,24 @@ class KiwoomAPI(QAxWidget):
             print(f"[ERROR] Login failed with error code: {err_code}")
 
     def fetch_stock_list(self):
+        """
+        MySQL에서 종목 리스트를 가져옵니다.
+        """
         try:
-            cursor = self.db_connection.cursor()
+            connection = self.db_pool.get_connection()
+            cursor = connection.cursor()
             cursor.execute("SELECT stock_idx, stock_name FROM stocks")
             self.stock_list = cursor.fetchall()
-        except mysql.connector.Error as err:
+        except Error as err:
             print(f"[ERROR] Database error: {err}")
+        finally:
+            cursor.close()
+            connection.close()
 
     def process_next_stock(self):
+        """
+        다음 종목 데이터를 요청합니다. 모든 종목이 처리되면 종료.
+        """
         if not self.stock_list:
             print("[INFO] All stocks processed.")
             return
@@ -59,9 +71,11 @@ class KiwoomAPI(QAxWidget):
         self.request_stock_data(stock_code)
 
     def request_stock_data(self, stock_code):
+        """
+        일봉 데이터를 요청합니다.
+        """
         self.data = []
         end_date = datetime.datetime.now()
-        start_date = end_date - datetime.timedelta(days=180)
         formatted_date = end_date.strftime("%Y%m%d")
 
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", stock_code)
@@ -88,32 +102,48 @@ class KiwoomAPI(QAxWidget):
                     "close": int(close_price),
                     "volume": int(volume)
                 })
-
             self.save_to_db()
             time.sleep(1)
             self.process_next_stock()
 
     def save_to_db(self):
+        """
+        일봉 데이터를 MySQL에 저장합니다.
+        """
         if not self.current_stock:
+            print("[ERROR] No current stock data to save.")
             return
 
         stock_code, stock_name = self.current_stock
-        cursor = self.db_connection.cursor()
 
-        # 기존 데이터 삭제
-        cursor.execute("DELETE FROM stock_datas WHERE stock_idx = %s", (stock_code,))
+        try:
+            connection = self.db_pool.get_connection()
+            cursor = connection.cursor()
 
-        for record in self.data:
-            cursor.execute(
-                """
-                INSERT INTO stock_datas (stock_idx, stock_date, open_price, highest_price, lowest_price, close_price, trade_volume)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
+            # 기존 데이터 삭제
+            delete_query = "DELETE FROM stock_datas WHERE stock_idx = %s"
+            cursor.execute(delete_query, (stock_code,))
+            print(f"[INFO] Existing data for stock code {stock_code} deleted.")
+
+            # 새로운 데이터 삽입
+            insert_query = """
+            INSERT INTO stock_datas (stock_idx, stock_date, open_price, highest_price, lowest_price, close_price, trade_volume)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            insert_values = [
                 (stock_code, record["date"], record["open"], record["high"], record["low"], record["close"], record["volume"])
-            )
+                for record in self.data
+            ]
+            cursor.executemany(insert_query, insert_values)
+            connection.commit()
+            print(f"[INFO] Inserted {len(insert_values)} rows for stock code {stock_code}.")
 
-        self.db_connection.commit()
-        print(f"[INFO] Data for {stock_name} saved to DB.")
+        except Error as err:
+            print(f"[ERROR] Database error while saving data for stock {stock_code}: {err}")
+
+        finally:
+            cursor.close()
+            connection.close()
 
     def request_real_data(self, screen_no, codes, fid_list):
         result = self.dynamicCall("SetRealReg(QString, QString, QString, QString)", screen_no, codes, fid_list, "0")
@@ -128,77 +158,73 @@ class KiwoomAPI(QAxWidget):
             current_price = clean_price(raw_price)
             if current_price > 0:
                 self.real_data[code] = {"current_price": current_price}
-                print(f"[DEBUG] Real-time Data Received - Code: {code}, Price: {current_price}")
 
 
 def periodic_save_real_data(kiwoom, interval=5):
-    """
-    실시간 데이터를 주기적으로 저장하는 함수.
-    실시간 데이터가 없으면 데이터베이스 작업을 건너뜀.
-    """
     while True:
-        time.sleep(interval)  # 주기적으로 실행 (기본: 5초)
+        time.sleep(interval)
 
-        # 실시간 데이터가 없으면 건너뛰기
         if not kiwoom.real_data:
             print("[INFO] No real-time data available. Skipping database save.")
             continue
 
         try:
-            connection = kiwoom.db_connection
+            connection = kiwoom.db_pool.get_connection()
             cursor = connection.cursor()
 
             query = """
             INSERT INTO realtime_stocks (stock_idx, current_price, create_at)
             VALUES (%s, %s, NOW())
             """
-            # 데이터베이스에 삽입할 값 준비
             values = [(code, info["current_price"]) for code, info in kiwoom.real_data.items()]
-            
-            # 데이터 삽입 실행
+
             cursor.executemany(query, values)
             connection.commit()
 
             print(f"[DEBUG] Real-time data saved: {len(values)} records")
-        except mysql.connector.Error as err:
+        except Error as err:
             print(f"[ERROR] Database error: {err}")
+        finally:
+            cursor.close()
+            connection.close()
 
 
 def periodic_save_daily_data(kiwoom):
     while True:
         now = datetime.datetime.now()
-        if now.hour == 17 and now.minute == 0:  # 매일 오후 5시에 실행
+        if now.hour == 16 and now.minute == 00:  # 일봉 데이터를 저장할 시간 설정
             kiwoom.fetch_stock_list()
             kiwoom.process_next_stock()
-        time.sleep(60)  # 1분마다 체크
+        time.sleep(60)
 
 
 def main():
-    db_connection = mysql.connector.connect(
+    # MySQL 연결 풀 생성
+    db_pool = pooling.MySQLConnectionPool(
+        pool_name="mypool",
+        pool_size=5,
         host="project-db-cgi.smhrd.com",
         user="mp_24K_DCX13_p3_2",
         password="smhrd2",
         database="mp_24K_DCX13_p3_2",
-        port=3307
+        port=3307,
+        ssl_disabled=True
     )
 
     app = QApplication(sys.argv)
-    kiwoom = KiwoomAPI(db_connection)
+    kiwoom = KiwoomAPI(db_pool)
     kiwoom.login()
 
     while not kiwoom.connected:
         app.processEvents()
 
-    # 실시간 데이터 요청
     kiwoom.fetch_stock_list()
     stock_codes = ";".join(code for code, _ in kiwoom.stock_list)
     kiwoom.request_real_data("1000", stock_codes, "10")
 
-    # 실시간 데이터 저장 스레드
     save_real_thread = threading.Thread(target=periodic_save_real_data, args=(kiwoom,), daemon=True)
     save_real_thread.start()
 
-    # 일봉 데이터 저장 스레드
     save_daily_thread = threading.Thread(target=periodic_save_daily_data, args=(kiwoom,), daemon=True)
     save_daily_thread.start()
 
