@@ -697,3 +697,6 @@ tbody tr:last-child{
   gap: 0px !important;
   }
   
+  #top-recommend,#top-volume,#top-value,.card{
+    cursor: pointer;
+  }
