@@ -421,3 +421,17 @@ canvas {
 input:focus {
   outline:none;
 }
+
+.choicelogo{
+  width: 25px;
+  height: 25px;
+  border-radius: 15px;
+  margin-right: 10px;
+}
+.logomm {
+  
+  vertical-align: middle;
+  align-items: center;
+  justify-items: center;
+  margin-right: 20px;
+}
