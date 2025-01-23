@@ -98,12 +98,15 @@ def train_and_predict(stock_idx):
         next_day_forecast_log = fitted_model.forecast(steps=1, exog=next_day_features)
         next_day_forecast = np.exp(next_day_forecast_log.iloc[0])
 
+        # 100원 단위로 반올림
+        next_day_forecast = round(next_day_forecast, -2)
+
         # 결과 계산
-        current_price = np.exp(y_test.iloc[-1])
+        current_price = round(np.exp(y_test.iloc[-1]), -2)  # 현재가도 100원 단위 반올림
         price_change = next_day_forecast - current_price
         trend = "상승" if price_change > 0 else "하락"
         percentage_change = (price_change / current_price) * 100
-        change_summary = f"{next_day_forecast} ({percentage_change:+.2f}%)"
+        change_summary = f"{price_change:+.0f}원 ({percentage_change:+.2f}%)"
 
         result = {
             "stock_idx": stock_idx,
@@ -135,7 +138,7 @@ def save_to_db(result):
         cursor = connection.cursor()
 
         # 기존 데이터 삭제 쿼리
-        delete_query = "DELETE FROM predictions WHERE stock_idx = %s"
+        delete_query = "DELETE FROM prediction_results WHERE stock_idx = %s"
         cursor.execute(delete_query, (result['stock_idx'],))
         print(f"[INFO] Existing data for stock_idx {result['stock_idx']} deleted.")
 
@@ -158,7 +161,6 @@ def save_to_db(result):
             connection.close()
 
 
-
 # 메인 함수: 병렬 처리
 def main():
     stock_list = [
@@ -175,8 +177,8 @@ def main():
     # 결과 출력
     for res in results:
         if res:
-            print(f"Stock: {res['stock_idx']}, Current: {res['current_price']:.2f}, "
-                  f"Predicted: {res['predicted_price']:.2f}, "
+            print(f"Stock: {res['stock_idx']}, Current: {res['current_price']:.0f}, "
+                  f"Predicted: {res['predicted_price']:.0f}, "
                   f"Trend: {res['trend']}, Change Summary: {res['change_summary']}")
 
 
