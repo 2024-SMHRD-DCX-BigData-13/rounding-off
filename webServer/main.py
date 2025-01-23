@@ -8,13 +8,10 @@ from controllers.stock_controller import router as stock_controller_router
 from controllers.trading_controller import router as trading_controller_router
 from controllers.fav_controller import router as fav_controller_router
 from controllers.kiwoom_controller import router as kiwoom_controller_router
-from models.prediction_model import PredictionModel
-from models.mySql import create_connection, close_connection
 import threading
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import logging
-
+import schedule
+import subprocess
+import time
 # FastAPI 애플리케이션 생성
 app = FastAPI()
 
@@ -24,7 +21,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # 템플릿 경로 설정 (HTML 파일)
 templates = Jinja2Templates(directory="views")
 
-# 세션 미들웨어 추가
 app.add_middleware(SessionMiddleware, secret_key="123")
 
 # 컨트롤러 라우터 추가
@@ -35,59 +31,47 @@ app.include_router(trading_controller_router)
 app.include_router(fav_controller_router)
 app.include_router(kiwoom_controller_router)
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
 
-# 데이터베이스 연결 및 PredictionModel 초기화
-db_config = create_connection()
-prediction_model = PredictionModel(db_config)
-
-# 비동기 예측 실행
-async def run_daily_prediction():
+def run_prediction_task():
     """
-    모든 종목에 대해 병렬로 예측 실행.
+    서버 내에서 실행할 특정 함수 (예측 작업)
     """
-    logger.info("[INFO] Running daily prediction...")
+    print("[INFO] Running prediction task...")
     try:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            loop = asyncio.get_running_loop()
-            tasks = [
-                loop.run_in_executor(executor, prediction_model.train_and_predict, stock_idx)
-                for stock_idx in prediction_model.stock_list
-            ]
-            await asyncio.gather(*tasks)
-        logger.info("[INFO] Daily prediction completed.")
+        # 여기에 실제 작업 로직을 추가하세요
+        print("[INFO] Prediction task executed successfully.")
     except Exception as e:
-        logger.error(f"[ERROR] Failed to run daily prediction: {e}")
+        print(f"[ERROR] Prediction task failed: {e}")
 
-# 스케줄러 실행 함수
-def scheduler_task():
-    """
-    매일 정해진 시간에 스케줄러를 실행.
-    """
-    import schedule
-    import time
 
-    logger.info("[INFO] Scheduler task started and waiting for the scheduled time...")
-    schedule.every().day.at("17:15").do(lambda: asyncio.run(run_daily_prediction()))
+def run_scheduler():
+    """
+    스케줄러 실행 루프
+    """
+    print("[INFO] Scheduler task started...")
+    # 매일 지정된 시간에 특정 함수 실행
+    schedule.every().day.at("09:15").do(run_prediction_task)
 
     while True:
         schedule.run_pending()
         time.sleep(1)
 
+
 @app.on_event("startup")
-def start_scheduler():
+async def startup_event():
     """
-    FastAPI 시작 시 스케줄러 실행.
+    FastAPI 서버 시작 시 호출되는 이벤트
     """
-    thread = threading.Thread(target=scheduler_task, daemon=True)
-    thread.start()
+    print("[INFO] FastAPI is starting...")
+
+    # 스케줄러를 별도의 스레드로 실행
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+
 
 @app.on_event("shutdown")
-def close_db_connection():
+async def shutdown_event():
     """
-    FastAPI 종료 시 데이터베이스 연결 닫기.
+    FastAPI 서버 종료 시 호출되는 이벤트
     """
-    close_connection(db_config)
-    logger.info("[INFO] Database connection closed.")
+    print("[INFO] FastAPI is shutting down...")

@@ -55,24 +55,25 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentSort === "prediction") {
         return stocks.sort((a, b) => {
           const getPercentage = (text) => {
-            const match = text.match(/([-+]?\d+(\.\d+)?)%/);
-            return match ? parseFloat(match[1]) : 0;
+            const match = text.match(/([-+]?\d+(\.\d+)?)%/); // %를 포함한 값 추출
+            return match ? parseFloat(match[1]) : 0; // 소수점 숫자로 변환
           };
           return getPercentage(b["예측(다음날)"]) - getPercentage(a["예측(다음날)"]);
         });
       } else if (currentSort === "volume") {
         return stocks.sort((a, b) => {
           const getVolume = (text) => {
-            const match = text.match(/(\d+)/);
-            return match ? parseInt(match[1]) : 0;
+            // 쉼표 제거 후 숫자로 변환
+            const sanitizedText = text.replace(/,/g, "").trim(); // 쉼표와 공백 제거
+            return parseInt(sanitizedText, 10) || 0; // 숫자로 변환
           };
           return getVolume(b["거래량"]) - getVolume(a["거래량"]);
         });
       } else if (currentSort === "value") {
         return stocks.sort((a, b) => {
           const getPrice = (text) => {
-            const match = text.replace(/,/g, "").match(/(\d+)/);
-            return match ? parseInt(match[1]) : 0;
+            const sanitizedText = text.replace(/,/g, "").trim(); // 쉼표와 공백 제거
+            return parseInt(sanitizedText, 10) || 0; // 숫자로 변환
           };
           return getPrice(b["현재가"]) - getPrice(a["현재가"]);
         });
