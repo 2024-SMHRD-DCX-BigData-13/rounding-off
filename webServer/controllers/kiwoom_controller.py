@@ -95,25 +95,30 @@ async def get_trade_history():
 @router.get("/account/info")
 async def get_account_info():
     """
-    ✅ 서브 서버에 계좌 정보 및 미체결 내역 요청
+    ✅ 메인 서버 컨트롤러
+    클라이언트 → 메인 서버 요청 → 서브 서버 요청 → 응답 반환
     """
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{SUB_SERVER_URL}/account/info")
+            # 🔹 서브 서버에 계좌 정보 요청
+            response_account = await client.get(f"{SUB_SERVER_URL}/account/info")
+            if response_account.status_code != 200:
+                raise HTTPException(status_code=response_account.status_code, detail="계좌 정보 요청 실패")
 
-        if response.status_code != 200:
-            print(f"[ERROR] Failed to fetch account info, status code: {response.status_code}")
-            raise HTTPException(status_code=response.status_code, detail="서브 서버 요청 실패")
+            # 🔹 서브 서버에 실시간 미체결 내역 요청
+            response_pending = await client.get(f"{SUB_SERVER_URL}/account/pending-orders")
+            if response_pending.status_code != 200:
+                raise HTTPException(status_code=response_pending.status_code, detail="미체결 내역 요청 실패")
 
-        account_data = response.json()  # ✅ JSON 변환
-        print("[INFO] Account & Pending Orders received from sub-server:", account_data)
+        # 🔹 JSON 데이터 변환
+        account_data = response_account.json()
+        pending_orders = response_pending.json()
 
         return {
             "status": "success",
-            "account_info": account_data.get("account_info", {}),
-            "pending_orders": account_data.get("pending_orders", [])
+            "account_info": account_data["account_info"],
+            "pending_orders": pending_orders["data"]
         }
 
     except Exception as e:
-        print(f"[ERROR] 서브 서버 통신 오류: {e}")
         raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")

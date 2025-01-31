@@ -248,13 +248,14 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", function () {
   fetchHoldings();
   fetchAccountInfo();
+  // setInterval(fetchPendingOrders, 5000); // ✅ 5초마다 실시간 미체결 내역 요청
 });
 
 // 🔹 계좌 정보 및 미체결 내역 요청
 async function fetchAccountInfo() {
   try {
     console.log("[DEBUG] Fetching account info from main server...");
-    const response = await fetch("/account/info"); // ✅ 메인 서버에 요청
+    const response = await fetch("/account/info"); // ✅ 메인 서버 요청
     const data = await response.json();
 
     console.log("[INFO] Account & Pending Orders received:", data); // ✅ 응답 확인
@@ -270,8 +271,27 @@ async function fetchAccountInfo() {
   }
 }
 
+// 🔹 실시간 미체결 내역 요청 (5초마다 실행)
+async function fetchPendingOrders() {
+  try {
+    console.log("[DEBUG] Fetching real-time pending orders...");
+    const response = await fetch("/account/pending-orders"); // ✅ 메인 서버 요청
+    const data = await response.json();
+
+    console.log("[INFO] Real-time Pending Orders received:", data); // ✅ 응답 확인
+
+    if (data.status === "success") {
+      updatePendingOrdersUI(data.data);
+    } else {
+      console.error("실시간 미체결 데이터 로드 실패:", data.detail);
+    }
+  } catch (error) {
+    console.error("실시간 미체결 데이터 요청 오류:", error);
+  }
+}
+
 // 🔹 계좌 정보 UI 업데이트
-function updateAccountUI(account, totalProfitRate) {
+function updateAccountUI(account) {
   if (!account) {
     console.warn("[WARNING] 계좌 정보 데이터가 없음.");
     return;
@@ -288,16 +308,13 @@ function updateAccountUI(account, totalProfitRate) {
 
   accountNumberElem.textContent = account.account_number || "-";
   balanceElem.textContent = account.balance ? account.balance.toLocaleString() + "원" : "-";
-  
-  // 🔹 총 수익률 업데이트
-  profitRateElem.textContent = totalProfitRate !== null ? totalProfitRate.toFixed(2) + "%" : "-";
+  profitRateElem.textContent = account.total_profit_rate ? account.total_profit_rate + "%" : "-";
 }
 
 // 🔹 미체결 내역 UI 업데이트
 function updatePendingOrdersUI(orders) {
   const tableBody = document.getElementById("notbuy-tbody");
-  const loadMoreBtn = document.getElementById("pending-load-more-btn");
-
+  const loadMoreBtn = document.getElementById("pending-load-more-btn"); // 더보기 버튼
   if (!tableBody || !loadMoreBtn) {
     console.error("[ERROR] 미체결 내역 테이블 또는 더보기 버튼을 찾을 수 없음.");
     return;
@@ -306,7 +323,7 @@ function updatePendingOrdersUI(orders) {
   tableBody.innerHTML = ""; // 기존 내용 초기화
 
   // 🔹 주문가 없는 데이터, 체결된 데이터 제외
-  const filteredOrders = (Array.isArray(orders) ? orders : []).filter(order => order.price && order.status !== "체결");
+  const filteredOrders = (Array.isArray(orders) ? orders : []).filter(order => order);
 
   if (filteredOrders.length === 0) {
     tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">미체결 내역 없음</td></tr>`;
@@ -314,11 +331,11 @@ function updatePendingOrdersUI(orders) {
     return;
   }
 
-  const maxVisible = 5;
-  let showingAll = false;
+  const maxVisible = 5; // 기본으로 표시할 개수
+  let showingAll = false; // 전체 보기 상태
 
   function renderTable(limit) {
-    tableBody.innerHTML = "";
+    tableBody.innerHTML = ""; // 테이블 초기화
     filteredOrders.slice(0, limit).forEach(order => {
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -330,16 +347,19 @@ function updatePendingOrdersUI(orders) {
       tableBody.appendChild(row);
     });
 
+    // 🔹 '더보기' 버튼 처리
     if (filteredOrders.length > maxVisible) {
-      loadMoreBtn.style.display = "block";
+      loadMoreBtn.style.display = "block"; // 버튼 표시
       loadMoreBtn.textContent = showingAll ? "숨기기" : "더보기";
     } else {
-      loadMoreBtn.style.display = "none";
+      loadMoreBtn.style.display = "none"; // 데이터가 적으면 버튼 숨김
     }
   }
 
+  // 🔹 초기 5개만 표시
   renderTable(maxVisible);
 
+  // 🔹 '더보기' 버튼 클릭 이벤트
   loadMoreBtn.onclick = function () {
     showingAll = !showingAll;
     renderTable(showingAll ? filteredOrders.length : maxVisible);

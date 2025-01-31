@@ -97,19 +97,14 @@ class KiwoomAPI(QAxWidget):
 
         self.dynamicCall("CommRqData(QString, QString, int, QString)", "예수금상세현황", "opw00001", 0, "9003")
 
-    def request_pending_orders(self):
-        """ 미체결 내역 요청 """
+    def register_real_pending_orders(self):
+        """ 실시간 미체결 내역 등록 """
         if not self.account_no:
-            print("[ERROR] Account number is not available.")
+            print("[ERROR] No account number available.")
             return
 
-        print("[DEBUG] Requesting pending orders...")
-        self.pending_orders_data = []  # 기존 데이터 초기화
-
-        self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
-        self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
-
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", "미체결내역조회", "opt10075", 0, "9004")
+        print("[DEBUG] Registering real-time pending orders...")
+        self.dynamicCall("SetRealReg(QString, QString, QString, QString)", "9005", "", "9203;9001;9003;9004;9002", "0")
 
     def request_trade_history(self):
         """ 거래 내역 조회 요청 """
@@ -205,29 +200,6 @@ class KiwoomAPI(QAxWidget):
 
             print("[INFO] Account Info Updated:", self.account_info)
             account_response_event.set()
-
-        elif rqname == "미체결내역조회":
-            print("[DEBUG] Received Pending Orders Data")
-            count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-            print(f"[DEBUG] Pending Orders Count: {count}")
-
-            for i in range(count):
-                date = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문시간").strip()
-                stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip()
-                price = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문가격").strip())
-                quantity = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문수량").strip())
-                status = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문상태").strip()
-
-                self.pending_orders_data.append({
-                    "date": date,
-                    "stock_name": stock_name,
-                    "price": price,
-                    "quantity": quantity,
-                    "status": status
-                })
-
-            print("[INFO] Pending Orders Updated:", self.pending_orders_data)
-            pending_orders_response_event.set()
 
         elif rqname == "계좌평가잔고내역조회":
             count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
@@ -334,6 +306,31 @@ class KiwoomAPI(QAxWidget):
             if current_price > 0:
                 self.real_data[code] = {"current_price": current_price}
                 # print(f"[DEBUG] Real-time data updated for {code}: {current_price}")
+        elif real_type == "주식주문":
+            order_number = self.dynamicCall("GetCommRealData(QString, int)", code, 9203).strip()
+            stock_name = self.dynamicCall("GetCommRealData(QString, int)", code, 9001).strip()
+            price = self.dynamicCall("GetCommRealData(QString, int)", code, 9003).strip()
+            quantity = self.dynamicCall("GetCommRealData(QString, int)", code, 9004).strip()
+            status = self.dynamicCall("GetCommRealData(QString, int)", code, 9002).strip()
+
+            if not price.isdigit() or status == "체결":
+                return  # 🔹 주문가 없는 데이터 or 체결된 데이터 제외
+
+            order_data = {
+                "order_number": order_number,
+                "stock_name": stock_name,
+                "price": int(price),
+                "quantity": int(quantity),
+                "status": status
+            }
+
+            print(f"[INFO] Real-time Pending Order Updated: {order_data}")
+
+            # 🔹 최신 20개 미체결 데이터 유지
+            self.pending_orders_data = [order_data] + self.pending_orders_data[:19]
+
+            # FastAPI 이벤트 트리거 (UI 업데이트)
+            pending_orders_response_event.set()
 
     def send_order(self, trade_type, stock_code, quantity, price):
         """
@@ -391,6 +388,7 @@ def start_kiwoom_server():
         app.processEvents()
 
     kiwoom.fetch_stock_list()
+    kiwoom.register_real_pending_orders()
     stock_codes = [code for code, _ in kiwoom.stock_list]
     kiwoom.request_real_data("1000", ";".join(stock_codes), "10")
 
@@ -525,39 +523,35 @@ async def get_trade_history():
 
 @app.get("/account/info")
 async def get_account_info():
-    """ ✅ 키움 API에서 계좌 정보를 요청하고 반환 """
+    """ ✅ 계좌 정보 요청 """
     global kiwoom
     if not kiwoom or not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
     print("[DEBUG] FastAPI received request for account info!")
-
-    # 🔹 이벤트 초기화
     account_response_event.clear()
-    pending_orders_response_event.clear()
 
-    # 🔹 키움 API에 계좌 정보 & 미체결 내역 요청
     kiwoom.request_account_info()
-    kiwoom.request_pending_orders()
 
-    # 🔹 데이터가 올 때까지 최대 5초 동안 기다림
     try:
         await asyncio.wait_for(account_response_event.wait(), timeout=5)
-        await asyncio.wait_for(pending_orders_response_event.wait(), timeout=5)
     except asyncio.TimeoutError:
         print("[ERROR] Account info request timed out.")
         raise HTTPException(status_code=408, detail="Account info request timed out.")
 
-    print("[INFO] Sending account info & pending orders to main server:")
-    print("Account Info:", kiwoom.account_info)
-    print("Pending Orders:", kiwoom.pending_orders_data)
+    return JSONResponse(content={"status": "success", "account_info": kiwoom.account_info})
 
-    return JSONResponse(content={
-        "status": "success",
-        "account_info": kiwoom.account_info,
-        "pending_orders": kiwoom.pending_orders_data
-    })
+@app.get("/account/pending-orders")
+async def get_pending_orders():
+    """ ✅ 실시간 미체결 내역 반환 """
+    global kiwoom
+    if not kiwoom or not kiwoom.connected:
+        raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
+    print("[DEBUG] FastAPI received request for real-time pending orders!")
+    print(kiwoom.pending_orders_data)
+
+    return JSONResponse(content={"status": "success", "data": kiwoom.pending_orders_data})
 
 @app.on_event("startup")
 def startup_event():
