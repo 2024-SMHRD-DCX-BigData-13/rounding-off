@@ -1,124 +1,93 @@
-# main_server.py
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, HTMLResponse
-import httpx
-import asyncio
-import websockets
-
-router = APIRouter()
-
-# # 실시간 데이터 WebSocket 연결
-# KIWOOM_API_URL = "http://127.0.0.1:8001"
-
-# # 주기적으로 데이터를 가져오는 작업
-# async def fetch_real_time_data(stock_code: str):
-#     while True:
-#         try:
-#             async with httpx.AsyncClient() as client:
-#                 response = await client.get(f"{KIWOOM_API_URL}/real-data/{stock_code}")
-#                 if response.status_code == 200:
-#                     data = response.json()
-#                     print(f"실시간 데이터 수신 ({stock_code}): {data}")
-#                 else:
-#                     print(f"키움 API 서버에서 데이터 수신 실패: {response.status_code}")
-#         except httpx.RequestError as exc:
-#             print(f"HTTP 요청 중 오류 발생: {exc}")
-#         await asyncio.sleep(1)  # 1초마다 데이터 요청
-
-# # 서버 시작 시 실시간 데이터 요청 작업 시작
-# @router.on_event("startup")
-# async def startup_event():
-#     stock_codes = ["005930", "000660", "035420"]  # 삼성전자, SK하이닉스, NAVER
-#     for stock_code in stock_codes:
-#         asyncio.create_task(fetch_real_time_data(stock_code))
-
-# # @router.get("/")
-# # async def root():
-# #     return {"message": "메인 서버 실행 중, 실시간 데이터 수신 중"}
-
-# HTML 템플릿
-# html_content = """
-# <!DOCTYPE html>
-# <html lang="en">
-# <head>
-#     <meta charset="UTF-8">
-#     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-#     <title>실시간 데이터</title>
-#     <script>
-#         const socket = new WebSocket("ws://127.0.0.1:8001/ws");
-#         socket.onmessage = function(event) {
-#             const data = JSON.parse(event.data);
-#             document.getElementById("price").innerText = "가격: " + data.price;
-#             document.getElementById("volume").innerText = "거래량: " + data.volume;
-#         };
-#         socket.onclose = function() {
-#             console.log("WebSocket 연결 종료");
-#         };
-#     </script>
-# </head>
-# <body>
-#     <h1>실시간 데이터</h1>
-#     <p id="price">가격: </p>
-#     <p id="volume">거래량: </p>
-# </body>
-# </html>
-# """
-
-# @router.get("/mmm", response_class=HTMLResponse)
-# async def root():
-#     """
-#     메인 페이지 HTML 반환
-#     """
-#     return html_content
-
-# async def receive_data_from_kiwoom():
-#     """
-#     키움 API 서버와 WebSocket 연결
-#     """
-#     uri = "ws://127.0.0.1:8001/ws"
-#     async with websockets.connect(uri) as websocket:
-#         while True:
-#             try:
-#                 data = await websocket.recv()
-#                 print(f"키움 서버 데이터 수신: {data}")
-#                 # 클라이언트로 전송 (필요 시 WebSocket 클라이언트 추가 구현 가능)
-#             except websockets.ConnectionClosed:
-#                 print("키움 서버 WebSocket 연결 종료")
-#                 break
-
-# @router.on_event("startup")
-# async def startup_event():
-#     """
-#     서버 시작 시 키움 API WebSocket 연결 시작
-#     """
-#     asyncio.create_task(receive_data_from_kiwoom())
-
-from fastapi import APIRouter, HTTPException, Request, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi import *
+from fastapi.responses import *
 from fastapi.templating import Jinja2Templates
-from fastapi.logger import logger
+from models.mySql import create_connection, close_connection  # MySQL 연결을 위한 함수
+import mysql.connector
+import random
+from typing import List
+from pydantic import BaseModel
+import requests
+import time
 import httpx
-
 
 router = APIRouter()
 
 templates = Jinja2Templates(directory="views")
 
 # 서브 서버 URL 설정
-SUB_SERVER_URL = "http://127.0.0.1:8001/fetch-daily-data"
+SUB_SERVER_URL = "http://127.0.0.1:8001"
 
-@router.get("/client")
-async def client(request: Request):
-    # /templates/client.html파일을 response함
-    return templates.TemplateResponse("client.html", {"request":request})
+class OrderRequest(BaseModel):
+    stock_id: str    # 종목코드
+    quantity: int    # 주문 수량
+    price: int       # 주문 가격
+    trade_type: str  # 주문 유형 (BUY or SELL)
 
-# 웹소켓 설정 ws://127.0.0.1:8000/ws 로 접속할 수 있음
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    print(f"client connected : {websocket.client}")
-    await websocket.accept() # client의 websocket접속 허용
-    await websocket.send_text(f"Welcome client : {websocket.client}")
-    while True:
-        data = await websocket.receive_text()  # client 메시지 수신대기
-        print(f"message received : {data} from : {websocket.client}")
-        await websocket.send_text(f"Message text was: {data}") # client에 메시지 전달
+print(OrderRequest)
+
+@router.post("/trade/order")
+async def trade_order(request: OrderRequest):
+    """
+    주문 요청 처리 - 서브 서버로 요청 전송
+    """
+    print("[DEBUG] Received OrderRequest:", request.dict())  # 요청 데이터 출력
+
+    try:
+        # 서브 서버로 주문 요청 전송
+        async with httpx.AsyncClient() as client:
+            sub_server_response = await client.post(
+                f"{SUB_SERVER_URL}/trade/{request.trade_type.lower()}",
+                json={
+                    "stock_code": request.stock_id,
+                    "quantity": request.quantity,
+                    "price": request.price,
+                }
+            )
+
+        # 서브 서버 응답 확인
+        if sub_server_response.status_code == 200:
+            return sub_server_response.json()  # 응답 그대로 반환
+        else:
+            raise HTTPException(
+                status_code=sub_server_response.status_code,
+                detail=f"서브 서버 요청 실패: {sub_server_response.text}"
+            )
+
+    except Exception as e:
+        print(f"[ERROR] 서브 서버와의 통신 실패: {e}")
+        raise HTTPException(status_code=500, detail="주문 처리 중 오류가 발생했습니다.")
+
+
+@router.get("/account/holdings")
+async def get_holdings():
+    """
+    클라이언트 → 메인 서버 요청 → 서브 서버 요청 → 응답 반환
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{SUB_SERVER_URL}/account/holdings")
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail="서브 서버 요청 실패")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")
+
+@router.get("/account/trade-history")
+async def get_trade_history():
+    """
+    클라이언트 → 메인 서버 요청 → 서브 서버 요청 → 응답 반환
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{SUB_SERVER_URL}/account/trade-history")
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail="서브 서버 요청 실패")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")

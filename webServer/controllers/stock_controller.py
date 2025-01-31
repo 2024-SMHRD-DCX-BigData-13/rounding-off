@@ -9,9 +9,10 @@ from typing import List
 from pydantic import BaseModel
 import requests
 import time
+import httpx
 
 
-# 주식 테이블블 관련 기능 컨트롤러
+# 주식 테이블 관련 기능 컨트롤러
 router = APIRouter()
 
 @router.get("/api/receive_data")

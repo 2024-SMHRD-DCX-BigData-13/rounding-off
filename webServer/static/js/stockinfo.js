@@ -466,5 +466,42 @@ function loding() {
 const observer = new MutationObserver(loding);
 observer.observe(tdV, { childList: true, subtree: true, characterData: true });
 
+// 매매 기능
+async function placeOrder() {
+  const params = new URLSearchParams(window.location.search);
+  const stockId = params.get("id");
+  const tradeType = document.getElementById('orderType').value;
+  const price = parseFloat(document.getElementById("buyPrice").value);
+  const quantity = parseInt(document.getElementById("quantity").value);
+  console.log(stockId, price, quantity, tradeType);
 
+  if (!stockId || isNaN(price) || isNaN(quantity)) {
+    alert("필수 정보가 누락되었습니다!");
+    return;
+  }
 
+  try {
+    const response = await fetch("/trade/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", // JSON 요청으로 설정
+      },
+      body: JSON.stringify({
+        stock_id: stockId,
+        quantity: quantity,
+        price: price,
+        trade_type: tradeType, // BUY 또는 SELL
+      }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      alert(`주문 상태: ${result.status}\n메시지: ${result.message}`);
+    } else {
+      alert(`주문 실패: ${result.detail}`);
+    }
+  } catch (error) {
+    console.error("주문 요청 중 오류 발생:", error);
+    alert("주문 요청 중 오류가 발생했습니다.");
+  }
+}
