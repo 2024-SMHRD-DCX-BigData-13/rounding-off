@@ -341,107 +341,132 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// 페이지 로드 시 즉시 데이터 로드
 document.addEventListener("DOMContentLoaded", function () {
-  fetchHoldings();
-  fetchTradeHistory();
-  
-  // 5초마다 데이터 자동 갱신
-  setInterval(() => {
-    fetchHoldings();
-    fetchTradeHistory();
-  }, 5000);
-});
-
-// 보유 종목 데이터 요청
-function fetchHoldings() {
   fetch("/account/holdings")
     .then(response => response.json())
     .then(data => {
       if (data.status === "success") {
-        updateHoldingsUI(data.data);
+        const stocks = data.data;
+        const tableBody = document.getElementById("my-stocks-table");
+        tableBody.innerHTML = ""; // 기존 내용 제거
+
+        // 테이블에 데이터 추가
+        stocks.forEach(stock => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><div class="logomm"><img class="choicelogo" src="${stockLogo(stock.stock_name)}">${stock.stock_name}</div></td>
+            <td>${stock.current_price.toLocaleString()}원</td>
+            <td>${stock.evaluation_profit.toLocaleString()}원</td>
+            <td>${stock.buy_price.toLocaleString()}원</td>
+            <td>${stock.quantity}주</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        // 평가 손익 색상 변경
+        const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
+        profitCells.forEach((cell) => {
+          const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
+          const profitNumber = parseFloat(profitValue);
+
+          if (profitNumber > 0) {
+            cell.classList.add('positive-profit');
+          } else if (profitNumber < 0) {
+            cell.classList.add('negative-profit');
+          }
+        });
       } else {
         console.error("보유 종목 데이터 로드 실패:", data.detail);
       }
     })
     .catch(error => console.error("보유 종목 데이터 요청 오류:", error));
-}
+});
 
-// 거래 내역 데이터 요청
-function fetchTradeHistory() {
+// 거래 내역 데이터 출력
+document.addEventListener("DOMContentLoaded", function () {
   fetch("/account/trade-history")
     .then(response => response.json())
     .then(data => {
       if (data.status === "success") {
-        updateTradeHistoryUI(data.data);
+        const trades = data.data;
+        const tableBody = document.getElementById("trade-table-body");
+        tableBody.innerHTML = ""; // 기존 내용 제거
+
+        // 테이블에 데이터 추가
+        trades.forEach(trade => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
+            <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade.stock_name)}">${trade.stock_name}</div></td>
+            <td>${trade.price !== "N/A" ? trade.price.toLocaleString() : "-"}원</td>
+            <td>${trade.quantity !== "N/A" ? trade.quantity.toLocaleString() : "-"}주</td>
+            <td>${trade.type === "BUY" ? "매수" : "매도"}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        // 평가 손익 색상 변경
+        const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
+        profitCells.forEach((cell) => {
+          const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
+          const profitNumber = parseFloat(profitValue);
+
+          if (profitNumber > 0) {
+            cell.classList.add('positive-profit');
+          } else if (profitNumber < 0) {
+            cell.classList.add('negative-profit');
+          }
+        });
       } else {
         console.error("거래 내역 데이터 로드 실패:", data.detail);
       }
     })
     .catch(error => console.error("거래 내역 데이터 요청 오류:", error));
-}
+});
 
-// 보유 종목 UI 업데이트
-function updateHoldingsUI(holdings) {
-  const tableBody = document.getElementById("my-stocks-table");
-  tableBody.innerHTML = ""; // 기존 내용 제거
+// 거래 내역 출력
+document.addEventListener("DOMContentLoaded", function () {
+  // /stocks API 호출
+  fetch("/trade")
+      .then(response => response.json())
+      .then(data => {
+          if (data.status === "success") {
+              const trades = data.data;
+              const tableBody = document.getElementById("trade-table-body");
 
-  holdings.forEach(stock => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(stock.stock_name)}">${stock.stock_name}</div></td>
-      <td>${stock.current_price.toLocaleString()}원</td>
-      <td>${stock.evaluation_profit.toLocaleString()}원</td>
-      <td>${stock.buy_price.toLocaleString()}원</td>
-      <td>${stock.quantity}주</td>
-    `;
-    tableBody.appendChild(row);
-  });
-
-  // 평가 손익 색상 변경
-  const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
-  profitCells.forEach((cell) => {
-    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-    const profitNumber = parseFloat(profitValue);
-
-    if (profitNumber > 0) {
-      cell.classList.add('positive-profit');
-    } else if (profitNumber < 0) {
-      cell.classList.add('negative-profit');
-    }
-  });
-}
-
-// 거래 내역 UI 업데이트
-function updateTradeHistoryUI(trades) {
-  const tableBody = document.getElementById("trade-table-body");
-  tableBody.innerHTML = ""; // 기존 내용 제거
-
-  trades.forEach(trade => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
-      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade.stock_name)}">${trade.stock_name}</div></td>
-      <td>${trade.price !== "N/A" ? trade.price.toLocaleString() : "-"}원</td>
-      <td>${trade.quantity !== "N/A" ? trade.quantity.toLocaleString() : "-"}주</td>
-      <td>${trade.type === "BUY" ? "매수" : "매도"}</td>
-    `;
-    tableBody.appendChild(row);
-  });
-
-  // 평가 손익 색상 변경
-  const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
-  profitCells.forEach((cell) => {
-    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-    const profitNumber = parseFloat(profitValue);
-
-    if (profitNumber > 0) {
-      cell.classList.add('positive-profit');
-    } else if (profitNumber < 0) {
-      cell.classList.add('negative-profit');
-    }
-  });
-}
+              // 테이블에 데이터 추가
+              trades.forEach(trade => {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
+                      <td>${trade["날짜"]}</td>
+                      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade["종목명"])}">${trade["종목명"]}</div></td>
+                      <td>${trade["평가손익"]}</td>
+                      <td>${trade["거래대금"]}</td>
+                      <td>${trade["거래량"]}</td>
+                      <td>${trade["구분"]}</td>
+                  `;
+                  tableBody.appendChild(row);
+                  const profitCells = document.querySelectorAll(
+                    'tbody tr td:nth-child(3)'
+                  );
+                  // 평가 손익 색상 변경
+                  profitCells.forEach((cell) => {
+                    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
+                    const profitNumber = parseFloat(profitValue);
+                
+                    if (profitNumber > 0) {
+                      cell.classList.add('positive-profit');
+                    } else if (profitNumber < 0) {
+                      cell.classList.add('negative-profit');
+                    }
+                  });
+              });
+          } else {
+              console.error("데이터 로드 실패");
+          }
+      })
+      .catch(error => console.error("Error fetching stocks data:", error));
+});
 
 // 비밀번호 확인
 
