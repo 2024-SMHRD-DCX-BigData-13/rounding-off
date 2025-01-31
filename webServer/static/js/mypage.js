@@ -248,17 +248,13 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", function () {
   fetchHoldings();
   fetchAccountInfo();
-  // setInterval(fetchPendingOrders, 5000); // ✅ 5초마다 실시간 미체결 내역 요청
 });
 
 // 🔹 계좌 정보 및 미체결 내역 요청
 async function fetchAccountInfo() {
   try {
-    console.log("[DEBUG] Fetching account info from main server...");
-    const response = await fetch("/account/info"); // ✅ 메인 서버 요청
+    const response = await fetch("/account/info");
     const data = await response.json();
-
-    console.log("[INFO] Account & Pending Orders received:", data); // ✅ 응답 확인
 
     if (data.status === "success") {
       updateAccountUI(data.account_info);
@@ -274,11 +270,8 @@ async function fetchAccountInfo() {
 // 🔹 실시간 미체결 내역 요청 (5초마다 실행)
 async function fetchPendingOrders() {
   try {
-    console.log("[DEBUG] Fetching real-time pending orders...");
-    const response = await fetch("/account/pending-orders"); // ✅ 메인 서버 요청
+    const response = await fetch("/account/pending-orders");
     const data = await response.json();
-
-    console.log("[INFO] Real-time Pending Orders received:", data); // ✅ 응답 확인
 
     if (data.status === "success") {
       updatePendingOrdersUI(data.data);
@@ -343,6 +336,7 @@ function updatePendingOrdersUI(orders) {
         <td>${order.price ? order.price.toLocaleString() + "원" : "-"}</td>
         <td>${order.quantity ? order.quantity.toLocaleString() + "주" : "-"}</td>
         <td>${order.status || "-"}</td>
+        <button class="btn btn-primary cancel-order-btn" value="${order.order_number}">취소</button>
       `;
       tableBody.appendChild(row);
     });
@@ -562,6 +556,45 @@ function updateTradeHistoryUI(trades) {
     renderTable(showingAll ? maxLimit : maxVisible);
   };
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const tableBody = document.getElementById("notbuy-tbody");
+
+  tableBody.addEventListener("click", async function (event) {
+    if (event.target.classList.contains("cancel-order-btn")) {
+      const orderNumber = event.target.value;
+
+      if (!orderNumber) {
+        alert("주문 번호를 찾을 수 없습니다.");
+        return;
+      }
+
+      const confirmCancel = confirm("정말 이 주문을 취소하시겠습니까?");
+      if (!confirmCancel) return;
+
+      try {
+        // ✅ FastAPI 메인 서버로 주문 취소 요청
+        const response = await fetch("/api/cancel-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_number: orderNumber }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert("주문이 취소되었습니다.");
+          fetchAccountInfo(); // ✅ UI 갱신 (미체결 내역 다시 가져오기)
+        } else {
+          alert(`주문 취소 실패: ${data.message}`);
+        }
+      } catch (error) {
+        console.error("주문 취소 중 오류 발생:", error);
+        alert("주문 취소 중 오류가 발생했습니다.");
+      }
+    }
+  });
+});
 
 // 비밀번호 확인
 
