@@ -435,3 +435,15 @@ input:focus {
   justify-items: center;
   margin-right: 20px;
 }
+
+#his-load-more-btn
+{
+  margin: 15px auto; /* 자동 마진으로 가로 중앙 정렬 */
+  margin-top: 20px;
+}
+
+#pending-load-more-btn
+{
+  margin: 15px auto; /* 자동 마진으로 가로 중앙 정렬 */
+  margin-top: 20px;
+}

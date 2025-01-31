@@ -58,16 +58,9 @@
               <strong>전화번호:</strong>
               <span id="tel"></span>
             </div>
-            <div class="info-item">
-              <strong>키움 API 연동 상태:</strong>
-              <span id="kiwoom-status">연동 필요</span>
-            </div>
           </div>
 
           <!-- 버튼들 -->
-          <button id="connectKiwoomApiButton" class="connect-api-button">
-            키움 API 연동
-          </button>
           <button id="editProfileButton" class="edit-profile-button">
             회원정보 수정
           </button>
@@ -76,12 +69,11 @@
         <!-- 오른쪽: 보유자산 -->
         <div class="profile-right">
           <h1><b>보유 자산</b></h1>
-          <p>키움 API 연동 후 계좌 정보를 확인할 수 있습니다.</p>
-          <div id="account-info" class="blur">
+          <div id="account-info">
             <ul>
-              <li>계좌 번호: 123-456-789</li>
-              <li>잔고: 10,000,000원</li>
-              <li>총 수익률: +15.5%</li>
+              <li>계좌 번호: <span id="account-number">-</span></li>
+              <li>잔고: <span id="balance">-</span></li>
+              <li>총 수익률: <span id="total-profit-rate">-</span></li>
             </ul>
           </div>
           <!-- 원형 그래프 -->
@@ -166,15 +158,15 @@
             <thead>
               <tr>
                 <th>종목명</th>
-                <th>현재가</th>
                 <th>주문가</th>
                 <th>주문량</th>
                 <th>구분</th>
               </tr>
             </thead>
-            <tbody id="">
+            <tbody id="notbuy-tbody">
             </tbody>
           </table>
+          <button id="pending-load-more-btn" style="display: none;" class="btn btn-primary">더보기</button>
         </div>
       </section>
       <!-- 미체결 여기까지 -->
@@ -210,9 +202,10 @@
                 <td>10000주</td>
                 <td>매도</td>
               </tr> -->
+              
             </tbody>
           </table>
-
+              <button id="his-load-more-btn" style="display: none;" class="btn btn-primary">더보기</button>
           <!-- 그래프 캔버스 -->
         </section>
       </div>

@@ -169,106 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
 });
 
-// 차트
-document.addEventListener('DOMContentLoaded', () => {
-  // 데이터 설정
-  const labels = ['삼성전자', 'LG에너지솔루션']; // 종목명
-  const investmentAmounts = [6000000, 4000000]; // 투자 금액
-  const currentValues = [6500000, 3900000]; // 현재 가치
-
-  // 상승/하락 색상 설정
-  const barColors = currentValues.map((value, index) => {
-    return value >= investmentAmounts[index] ? '#ff0000' : '#0000ff'; // 상승: 빨강, 하락: 파랑
-  });
-
-  // 그래프 데이터
-  const investmentData = {
-    labels: labels,
-    datasets: [
-      {
-        label: '현재 가치 (원)',
-        data: currentValues,
-        backgroundColor: barColors, // 데이터별 색상 설정
-        borderColor: barColors.map((color) => color), // 테두리 색상
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  // 그래프 옵션
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: false, // 범례 비활성화
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#cfcfcf', // X축 텍스트 색상
-        },
-      },
-      y: {
-        ticks: {
-          color: '#cfcfcf', // Y축 텍스트 색상
-        },
-        beginAtZero: true, // Y축 0부터 시작
-      },
-    },
-  };
-
-  // 캔버스에 그래프 렌더링
-  const ctx = document.getElementById('investmentChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: investmentData,
-    options: chartOptions,
-  });
-});
-
-// 계좌정보 원형 그래프
-
-document.addEventListener('DOMContentLoaded', () => {
-  // 종목별 비중 데이터
-  const data = {
-    labels: ['삼성전자', 'LG에너지솔루션', '네이버', '카카오'], // 종목명
-    datasets: [
-      {
-        label: '종목별 비중',
-        data: [50, 30, 15, 5], // 비중 데이터 (%)
-        backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0'], // 색상
-        borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'], // 테두리 색상
-        borderWidth: 2, // 테두리 두께
-      },
-    ],
-  };
-
-  // 차트 옵션
-  const options = {
-    responsive: true, // 반응형
-    plugins: {
-      legend: {
-        position: 'top', // 범례 위치
-        labels: {
-          color: '#cfcfcf', // 텍스트 색상
-          font: {
-            size: 14,
-          },
-        },
-      },
-    },
-  };
-
-  // 그래프 생성
-  const ctx = document.getElementById('accountPieChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'pie', // 원형 그래프
-    data: data,
-    options: options,
-  });
-});
-
 // 로그아웃기능
 document.getElementById('logoutButton').addEventListener('click', () => {
   fetch('/logout', { method: 'POST' })
@@ -282,9 +182,13 @@ document.getElementById('logoutButton').addEventListener('click', () => {
 const profileSection = document.getElementById('profile-section');
 const holdings = document.getElementById('holdings');
 const tradeSection = document.getElementById('trade-section');
+const notbuy = document.getElementById('notbuy');
 
 document.getElementById('goProfile').addEventListener('click', () => {
   profileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+document.getElementById('goNotBuy').addEventListener('click', () => {
+  notbuy.scrollIntoView({ behavior: 'smooth', block: 'center' });
 })
 
 document.getElementById('goHoldings').addEventListener('click', () => {
@@ -342,45 +246,238 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-  fetch("/account/holdings")
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === "success") {
-        const stocks = data.data;
-        const tableBody = document.getElementById("my-stocks-table");
-        tableBody.innerHTML = ""; // 기존 내용 제거
-
-        // 테이블에 데이터 추가
-        stocks.forEach(stock => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td><div class="logomm"><img class="choicelogo" src="${stockLogo(stock.stock_name)}">${stock.stock_name}</div></td>
-            <td>${stock.current_price.toLocaleString()}원</td>
-            <td>${stock.evaluation_profit.toLocaleString()}원</td>
-            <td>${stock.buy_price.toLocaleString()}원</td>
-            <td>${stock.quantity}주</td>
-          `;
-          tableBody.appendChild(row);
-        });
-
-        // 평가 손익 색상 변경
-        const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
-        profitCells.forEach((cell) => {
-          const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-          const profitNumber = parseFloat(profitValue);
-
-          if (profitNumber > 0) {
-            cell.classList.add('positive-profit');
-          } else if (profitNumber < 0) {
-            cell.classList.add('negative-profit');
-          }
-        });
-      } else {
-        console.error("보유 종목 데이터 로드 실패:", data.detail);
-      }
-    })
-    .catch(error => console.error("보유 종목 데이터 요청 오류:", error));
+  fetchHoldings();
+  fetchAccountInfo();
 });
+
+// 🔹 계좌 정보 및 미체결 내역 요청
+async function fetchAccountInfo() {
+  try {
+    console.log("[DEBUG] Fetching account info from main server...");
+    const response = await fetch("/account/info"); // ✅ 메인 서버에 요청
+    const data = await response.json();
+
+    console.log("[INFO] Account & Pending Orders received:", data); // ✅ 응답 확인
+
+    if (data.status === "success") {
+      updateAccountUI(data.account_info);
+      updatePendingOrdersUI(data.pending_orders);
+    } else {
+      console.error("계좌 정보 로드 실패:", data.detail);
+    }
+  } catch (error) {
+    console.error("계좌 정보 요청 오류:", error);
+  }
+}
+
+// 🔹 계좌 정보 UI 업데이트
+function updateAccountUI(account, totalProfitRate) {
+  if (!account) {
+    console.warn("[WARNING] 계좌 정보 데이터가 없음.");
+    return;
+  }
+
+  const accountNumberElem = document.getElementById("account-number");
+  const balanceElem = document.getElementById("balance");
+  const profitRateElem = document.getElementById("total-profit-rate");
+
+  if (!accountNumberElem || !balanceElem || !profitRateElem) {
+    console.error("[ERROR] 계좌 정보 UI 요소를 찾을 수 없음.");
+    return;
+  }
+
+  accountNumberElem.textContent = account.account_number || "-";
+  balanceElem.textContent = account.balance ? account.balance.toLocaleString() + "원" : "-";
+  
+  // 🔹 총 수익률 업데이트
+  profitRateElem.textContent = totalProfitRate !== null ? totalProfitRate.toFixed(2) + "%" : "-";
+}
+
+// 🔹 미체결 내역 UI 업데이트
+function updatePendingOrdersUI(orders) {
+  const tableBody = document.getElementById("notbuy-tbody");
+  const loadMoreBtn = document.getElementById("pending-load-more-btn");
+
+  if (!tableBody || !loadMoreBtn) {
+    console.error("[ERROR] 미체결 내역 테이블 또는 더보기 버튼을 찾을 수 없음.");
+    return;
+  }
+
+  tableBody.innerHTML = ""; // 기존 내용 초기화
+
+  // 🔹 주문가 없는 데이터, 체결된 데이터 제외
+  const filteredOrders = (Array.isArray(orders) ? orders : []).filter(order => order.price && order.status !== "체결");
+
+  if (filteredOrders.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">미체결 내역 없음</td></tr>`;
+    loadMoreBtn.style.display = "none"; // 데이터 없으면 버튼 숨김
+    return;
+  }
+
+  const maxVisible = 5;
+  let showingAll = false;
+
+  function renderTable(limit) {
+    tableBody.innerHTML = "";
+    filteredOrders.slice(0, limit).forEach(order => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><img class="choicelogo" src="${stockLogo(order.stock_name)}">${order.stock_name || "-"}</td>
+        <td>${order.price ? order.price.toLocaleString() + "원" : "-"}</td>
+        <td>${order.quantity ? order.quantity.toLocaleString() + "주" : "-"}</td>
+        <td>${order.status || "-"}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    if (filteredOrders.length > maxVisible) {
+      loadMoreBtn.style.display = "block";
+      loadMoreBtn.textContent = showingAll ? "숨기기" : "더보기";
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  renderTable(maxVisible);
+
+  loadMoreBtn.onclick = function () {
+    showingAll = !showingAll;
+    renderTable(showingAll ? filteredOrders.length : maxVisible);
+  };
+}
+
+// 🔹 보유 종목 데이터 가져와 테이블 & 원형 차트 업데이트
+async function fetchHoldings() {
+  try {
+    const response = await fetch("/account/holdings");
+    const data = await response.json();
+
+    if (data.status === "success") {
+      const stocks = data.data;
+      updateHoldingsTable(stocks);
+      updateHoldingsChart(stocks);
+    } else {
+      console.error("보유 종목 데이터 로드 실패:", data.detail);
+    }
+  } catch (error) {
+    console.error("보유 종목 데이터 요청 오류:", error);
+  }
+}
+
+// 🔹 보유 종목 테이블 업데이트
+function updateHoldingsTable(stocks) {
+  const tableBody = document.getElementById("my-stocks-table");
+  tableBody.innerHTML = "";
+
+  let totalProfit = 0;
+  let totalInvestment = 0;
+
+  stocks.forEach(stock => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(stock.stock_name)}">${stock.stock_name}</div></td>
+      <td>${stock.current_price.toLocaleString()}원</td>
+      <td>${stock.evaluation_profit.toLocaleString()}원</td>
+      <td>${stock.buy_price.toLocaleString()}원</td>
+      <td>${stock.quantity}주</td>
+    `;
+    tableBody.appendChild(row);
+
+    totalProfit += stock.evaluation_profit;
+    totalInvestment += stock.buy_price * stock.quantity;
+  });
+
+  let totalProfitRate = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : null;
+
+  fetchAccountInfo(totalProfitRate);
+
+  const profitCells = document.querySelectorAll("tbody tr td:nth-child(3)");
+  profitCells.forEach((cell) => {
+    const profitValue = cell.textContent.replace(/[^0-9.-]/g, "");
+    const profitNumber = parseFloat(profitValue);
+
+    if (profitNumber > 0) {
+      cell.classList.add("positive-profit");
+    } else if (profitNumber < 0) {
+      cell.classList.add("negative-profit");
+    }
+  });
+}
+
+// 🔹 계좌 정보 및 미체결 내역 요청
+async function fetchAccountInfo(totalProfitRate = null) {
+  try {
+    console.log("[DEBUG] Fetching account info from main server...");
+    const response = await fetch("/account/info");
+    const data = await response.json();
+
+    console.log("[INFO] Account & Pending Orders received:", data);
+
+    if (data.status === "success") {
+      updateAccountUI(data.account_info, totalProfitRate);
+      updatePendingOrdersUI(data.pending_orders);
+    } else {
+      console.error("계좌 정보 로드 실패:", data.detail);
+    }
+  } catch (error) {
+    console.error("계좌 정보 요청 오류:", error);
+  }
+}
+
+
+// 🔹 보유 종목 비중 차트 업데이트
+function updateHoldingsChart(stocks) {
+  const labels = stocks.map(stock => stock.stock_name);
+  const values = stocks.map(stock => stock.current_price * stock.quantity);
+
+  // 🔹 자동 색상 생성 (종목 개수에 맞게)
+  const backgroundColors = generateRandomColors(stocks.length);
+
+  const ctx = document.getElementById("accountPieChart").getContext("2d");
+
+  // 기존 차트가 있다면 삭제 후 새로 생성
+  if (window.myPieChart) {
+    window.myPieChart.destroy();
+  }
+
+  window.myPieChart = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "종목별 비중",
+          data: values,
+          backgroundColor: backgroundColors,
+          borderColor: "#ffffff",
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            color: "#cfcfcf",
+            font: { size: 14 },
+          },
+        },
+      },
+    },
+  });
+}
+
+// 🔹 랜덤 색상 생성 함수 (종목 개수에 맞게)
+function generateRandomColors(count) {
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    const randomColor = `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`;
+    colors.push(randomColor);
+  }
+  return colors;
+}
 
 // 거래 내역 데이터 출력
 document.addEventListener("DOMContentLoaded", function () {
@@ -389,34 +486,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(data => {
       if (data.status === "success") {
         const trades = data.data;
-        const tableBody = document.getElementById("trade-table-body");
-        tableBody.innerHTML = ""; // 기존 내용 제거
-
-        // 테이블에 데이터 추가
-        trades.forEach(trade => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
-            <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade.stock_name)}">${trade.stock_name}</div></td>
-            <td>${trade.price !== "N/A" ? trade.price.toLocaleString() : "-"}원</td>
-            <td>${trade.quantity !== "N/A" ? trade.quantity.toLocaleString() : "-"}주</td>
-            <td>${trade.type === "BUY" ? "매수" : "매도"}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-
-        // 평가 손익 색상 변경
-        const profitCells = document.querySelectorAll('tbody tr td:nth-child(3)');
-        profitCells.forEach((cell) => {
-          const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-          const profitNumber = parseFloat(profitValue);
-
-          if (profitNumber > 0) {
-            cell.classList.add('positive-profit');
-          } else if (profitNumber < 0) {
-            cell.classList.add('negative-profit');
-          }
-        });
+        updateTradeHistoryUI(trades);
       } else {
         console.error("거래 내역 데이터 로드 실패:", data.detail);
       }
@@ -424,49 +494,54 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch(error => console.error("거래 내역 데이터 요청 오류:", error));
 });
 
-// 거래 내역 출력
-document.addEventListener("DOMContentLoaded", function () {
-  // /stocks API 호출
-  fetch("/trade")
-      .then(response => response.json())
-      .then(data => {
-          if (data.status === "success") {
-              const trades = data.data;
-              const tableBody = document.getElementById("trade-table-body");
+// 거래 내역 UI 업데이트
+function updateTradeHistoryUI(trades) {
+  const tableBody = document.getElementById("trade-table-body");
+  const hisLoadMoreBtn = document.getElementById("his-load-more-btn");
+  tableBody.innerHTML = ""; // 기존 내용 제거
 
-              // 테이블에 데이터 추가
-              trades.forEach(trade => {
-                  const row = document.createElement("tr");
-                  row.innerHTML = `
-                      <td>${trade["날짜"]}</td>
-                      <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade["종목명"])}">${trade["종목명"]}</div></td>
-                      <td>${trade["평가손익"]}</td>
-                      <td>${trade["거래대금"]}</td>
-                      <td>${trade["거래량"]}</td>
-                      <td>${trade["구분"]}</td>
-                  `;
-                  tableBody.appendChild(row);
-                  const profitCells = document.querySelectorAll(
-                    'tbody tr td:nth-child(3)'
-                  );
-                  // 평가 손익 색상 변경
-                  profitCells.forEach((cell) => {
-                    const profitValue = cell.textContent.replace(/[^0-9.-]/g, ''); // 숫자만 추출
-                    const profitNumber = parseFloat(profitValue);
-                
-                    if (profitNumber > 0) {
-                      cell.classList.add('positive-profit');
-                    } else if (profitNumber < 0) {
-                      cell.classList.add('negative-profit');
-                    }
-                  });
-              });
-          } else {
-              console.error("데이터 로드 실패");
-          }
-      })
-      .catch(error => console.error("Error fetching stocks data:", error));
-});
+  const maxVisible = 5;  // 기본으로 표시할 개수
+  const maxLimit = 20;  // 최대 표시 개수
+  let showingAll = false; // 모든 데이터가 보이는지 여부
+
+  // 🔹 데이터 역순 정렬 (최신 거래 내역이 위로)
+  trades.reverse();
+
+  // 🔹 최대 20개까지만 사용
+  const limitedTrades = trades.slice(0, maxLimit);
+
+  function renderTable(limit) {
+    tableBody.innerHTML = ""; // 테이블 초기화
+    limitedTrades.slice(0, limit).forEach(trade => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
+        <td><div class="logomm"><img class="choicelogo" src="${stockLogo(trade.stock_name)}">${trade.stock_name}</div></td>
+        <td>${trade.price !== "N/A" ? trade.price.toLocaleString() : "-"}원</td>
+        <td>${trade.quantity !== "N/A" ? trade.quantity.toLocaleString() : "-"}주</td>
+        <td>${trade.type === "현금매수" ? "매수" : "매도"}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    // "더보기" 버튼 처리
+    if (limitedTrades.length > maxVisible) {
+      hisLoadMoreBtn.style.display = "block"; // 더보기 버튼 표시
+      hisLoadMoreBtn.textContent = showingAll ? "숨기기" : "더보기";
+    } else {
+      hisLoadMoreBtn.style.display = "none"; // 데이터가 적으면 버튼 숨김
+    }
+  }
+
+  // 초기 5개만 표시
+  renderTable(maxVisible);
+
+  // "더보기" 버튼 클릭 이벤트
+  hisLoadMoreBtn.onclick = function () {
+    showingAll = !showingAll;
+    renderTable(showingAll ? maxLimit : maxVisible);
+  };
+}
 
 // 비밀번호 확인
 
