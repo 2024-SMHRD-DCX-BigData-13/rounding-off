@@ -91,3 +91,34 @@ async def get_trade_history():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")
+
+@router.get("/account/info")
+async def get_account_info():
+    """
+    ✅ 메인 서버 컨트롤러
+    클라이언트 → 메인 서버 요청 → 서브 서버 요청 → 응답 반환
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            # 🔹 서브 서버에 계좌 정보 요청
+            response_account = await client.get(f"{SUB_SERVER_URL}/account/info")
+            if response_account.status_code != 200:
+                raise HTTPException(status_code=response_account.status_code, detail="계좌 정보 요청 실패")
+
+            # 🔹 서브 서버에 실시간 미체결 내역 요청
+            response_pending = await client.get(f"{SUB_SERVER_URL}/account/pending-orders")
+            if response_pending.status_code != 200:
+                raise HTTPException(status_code=response_pending.status_code, detail="미체결 내역 요청 실패")
+
+        # 🔹 JSON 데이터 변환
+        account_data = response_account.json()
+        pending_orders = response_pending.json()
+
+        return {
+            "status": "success",
+            "account_info": account_data["account_info"],
+            "pending_orders": pending_orders["data"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")
