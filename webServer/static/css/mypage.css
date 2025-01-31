@@ -335,13 +335,13 @@ th {
 }
 
 /* 보유 종목 섹션 마진 조정 */
-#holdings {
+#holdings,#notbuy {
   margin: 20px auto;
   margin-top: 30px;
   font-size: 16px;
   font-weight: bold;
 }
-#holdings h1 {
+#holdings h1, #notbuy h1 {
   font-size: 30px;
   font-weight: bold;
   color: #c3c3c6;
