@@ -30,6 +30,7 @@
       <h2><b>마이페이지</b></h2>
       <ul class="menu">
         <li><a id="goProfile">프로필 관리</a></li>
+        <li><a id="goNotBuy">미체결</a></li>
         <li><a id="goHoldings">보유 종목</a></li>
         <li><a id="goTrade">거래 내역</a></li>
       </ul>
@@ -123,15 +124,6 @@
           </form>
         </div>
       </div>
-      <!-- 관심목록 모달 -->
-      <div id="interestModal" class="modal">
-        <div class="modal-content"></div>
-        <h2>관심 종목</h2>
-        <div id="stock-list">
-          <!-- 관심 종목 목록이 여기 동적으로 추가 -->
-        </div>
-        <button id="add-stock">+ 추가하기</button>
-      </div>
       <!-- 보유 종목 -->
       <section id="holdings">
         <div class="get-list">
@@ -166,6 +158,26 @@
           </table>
         </div>
       </section>
+      <!-- 미체결 부분 -->
+      <section id="notbuy">
+        <div class="get-list">
+          <h1>미체결</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>종목명</th>
+                <th>현재가</th>
+                <th>주문가</th>
+                <th>주문량</th>
+                <th>구분</th>
+              </tr>
+            </thead>
+            <tbody id="">
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- 미체결 여기까지 -->
       <div class="my-list">
         <!-- 투자 현황 -->
         <section id="trade-section">
@@ -175,8 +187,7 @@
               <tr>
                 <th>날짜</th>
                 <th>종목명</th>
-                <th>평가손익</th>
-                <th>거래대금</th>
+                <th>거래가</th>
                 <th>거래량</th>
                 <th>구분</th>
               </tr>
