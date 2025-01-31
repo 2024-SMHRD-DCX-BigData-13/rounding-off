@@ -122,3 +122,32 @@ async def get_account_info():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")
+
+class CancelOrderRequest(BaseModel):
+    order_number: str  # ✅ 반드시 문자열로 처리
+
+@router.post("/api/cancel-order")
+async def cancel_order(request: CancelOrderRequest):
+    """미체결 주문 취소 (메인 FastAPI → 서브 FastAPI)"""
+    order_number = request.order_number
+    if not order_number:
+        raise HTTPException(status_code=400, detail="주문 번호가 필요합니다.")
+
+    print(f"[INFO] 주문 취소 요청: {order_number}")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            # ✅ 서브 서버(FastAPI)로 주문 취소 요청
+            response = await client.post(f"{SUB_SERVER_URL}/account/cancel-order", json={"order_number": order_number})
+            response_data = response.json()
+
+            if response.status_code == 200 and response_data["status"] == "success":
+                print(f"[INFO] 주문 취소 성공: {order_number}")
+                return JSONResponse(content={"success": True, "message": "주문이 취소되었습니다."})
+            else:
+                print(f"[ERROR] 주문 취소 실패: {response_data}")
+                return JSONResponse(content={"success": False, "message": "주문 취소 실패"}, status_code=500)
+
+        except Exception as e:
+            print(f"[ERROR] 주문 취소 요청 중 오류 발생: {e}")
+            return JSONResponse(content={"success": False, "message": "서버 오류"}, status_code=500)

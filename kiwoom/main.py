@@ -97,14 +97,18 @@ class KiwoomAPI(QAxWidget):
 
         self.dynamicCall("CommRqData(QString, QString, int, QString)", "예수금상세현황", "opw00001", 0, "9003")
 
-    def register_real_pending_orders(self):
-        """ 실시간 미체결 내역 등록 """
+    def request_real_time_pending_orders(self):
+        """ 실시간 미체결 데이터 요청 """
         if not self.account_no:
             print("[ERROR] No account number available.")
             return
 
-        print("[DEBUG] Registering real-time pending orders...")
-        self.dynamicCall("SetRealReg(QString, QString, QString, QString)", "9005", "", "9203;9001;9003;9004;9002", "0")
+        print("[DEBUG] Requesting Real-time Pending Orders...")
+
+        self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
+        self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "실시간미체결요청", "opt10075", 0, "9006")
 
     def request_trade_history(self):
         """ 거래 내역 조회 요청 """
@@ -153,7 +157,34 @@ class KiwoomAPI(QAxWidget):
         self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회", "opt10081", 0, "0101")
         self.data_event_loop.exec_()
 
-    def _on_receive_trdata(self, screen_no, rqname, trcode, recordname, prev_next):
+    def cancel_order(self, order_number):
+        """
+        키움 API 미체결 주문 취소 요청
+        """
+        if not self.account_no:
+            print("[ERROR] Account number is not available.")
+            return
+
+        print(f"[DEBUG] Cancelling order: {order_number}")
+
+        result = self.dynamicCall(
+            "SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+            [
+                "주문취소",
+                "9006",  # 화면번호 (중복 방지)
+                self.account_no,  # 계좌번호
+                3,  # 주문유형: 3 (취소 주문)
+                "",  # 종목코드 (미체결 취소는 종목코드 필요 없음)
+                0,  # 수량 (미체결 취소는 수량 필요 없음)
+                0,  # 가격 (미체결 취소는 가격 필요 없음)
+                "00",  # 호가구분: 지정가
+                order_number,  # 원주문번호
+            ]
+        )
+        print(f"[INFO] Order cancellation request sent: {order_number}, Result: {result}")
+        return result
+
+    def _on_receive_trdata(self, screen_no, rqname, trcode, recordname, prev_next,sRQName):
         count = 0
         if rqname == "주식일봉차트조회":
             count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
@@ -221,13 +252,66 @@ class KiwoomAPI(QAxWidget):
 
             holdings_response_event.set()
 
+        elif sRQName == "실시간미체결요청":
+            print("[DEBUG] 실시간 미체결 데이터 요청 수신")
+
+            count = self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName)
+            print(f"[DEBUG] 현재 미체결 주문 개수: {count}")
+
+            self.not_signed_account_dict = {}  # ✅ 기존 미체결 데이터 초기화
+
+            for i in range(count):
+                order_number = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문번호").strip()
+                stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "종목명").strip()
+                order_type = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문구분").strip()
+                price = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문가격").strip()
+                quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문수량").strip()
+                not_signed_quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "미체결수량").strip()
+                signed_quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "체결량").strip()
+                current_price = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "현재가").strip()
+                status = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문상태").strip()
+
+                # 🔹 체결 완료된 주문은 저장하지 않음
+                if status in ["체결", "거부"]:
+                    continue
+
+                # 🔹 숫자형 데이터 정리
+                price = f"{int(price):,}원" if price.replace("-", "").isdigit() else "-"
+                quantity = f"{int(quantity):,}개" if quantity.replace("-", "").isdigit() else "-"
+                not_signed_quantity = f"{int(not_signed_quantity):,}개" if not_signed_quantity.replace("-", "").isdigit() else "-"
+                signed_quantity = f"{int(signed_quantity):,}개" if signed_quantity.replace("-", "").isdigit() else "-"
+                current_price = f"{int(current_price):,}원" if current_price.replace("-", "").isdigit() else "-"
+
+                # 🔹 딕셔너리에 저장
+                self.not_signed_account_dict[order_number] = {
+                    "주문번호": order_number,
+                    "종목명": stock_name,
+                    "주문구분": order_type,
+                    "주문가격": price,
+                    "주문수량": quantity,
+                    "미체결수량": not_signed_quantity,
+                    "체결량": signed_quantity,
+                    "현재가": current_price,
+                    "주문상태": status
+                }
+
+            # ✅ 주문번호 기준 정렬
+            sorted_orders = sorted(self.not_signed_account_dict.values(), key=lambda x: x["주문번호"])
+
+            print("[INFO] 최신 미체결 주문 목록:", sorted_orders)
+
+            # ✅ FastAPI 이벤트 트리거 (UI 업데이트)
+            self.pending_orders_data = sorted_orders  # 🔹 JSON 변환 가능하도록 리스트 저장
+            pending_orders_response_event.set()
+
+
         elif rqname == "체결내역조회":
             count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
 
         if count == 0:
-            return  # 🔹 데이터가 없으면 추가 진행 안 함
+            return
 
-        self.trade_history_data.clear()  # 🔹 새로운 요청마다 초기화
+        self.trade_history_data.clear()
 
         for i in range(count):
             date_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결시간").strip()
@@ -236,9 +320,7 @@ class KiwoomAPI(QAxWidget):
             quantity_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결량").strip()
             trade_type = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문구분").strip()
 
-            # 🔹 원본 데이터 로그 추가
 
-            # 🔹 데이터가 비어 있으면 "N/A" 처리 (빈 문자열 방지)
             date = date_raw if date_raw else "N/A"
             price = int(price_raw) if price_raw.replace("-", "").isdigit() else "N/A"
             quantity = int(quantity_raw) if quantity_raw.replace("-", "").isdigit() else "N/A"
@@ -258,6 +340,7 @@ class KiwoomAPI(QAxWidget):
 
         # 🔹 FastAPI에 데이터 수신 완료 신호 보내기
         trade_history_response_event.set()
+        
 
 
     def save_to_db(self):
@@ -306,31 +389,6 @@ class KiwoomAPI(QAxWidget):
             if current_price > 0:
                 self.real_data[code] = {"current_price": current_price}
                 # print(f"[DEBUG] Real-time data updated for {code}: {current_price}")
-        elif real_type == "주식주문":
-            order_number = self.dynamicCall("GetCommRealData(QString, int)", code, 9203).strip()
-            stock_name = self.dynamicCall("GetCommRealData(QString, int)", code, 9001).strip()
-            price = self.dynamicCall("GetCommRealData(QString, int)", code, 9003).strip()
-            quantity = self.dynamicCall("GetCommRealData(QString, int)", code, 9004).strip()
-            status = self.dynamicCall("GetCommRealData(QString, int)", code, 9002).strip()
-
-            if not price.isdigit() or status == "체결":
-                return  # 🔹 주문가 없는 데이터 or 체결된 데이터 제외
-
-            order_data = {
-                "order_number": order_number,
-                "stock_name": stock_name,
-                "price": int(price),
-                "quantity": int(quantity),
-                "status": status
-            }
-
-            print(f"[INFO] Real-time Pending Order Updated: {order_data}")
-
-            # 🔹 최신 20개 미체결 데이터 유지
-            self.pending_orders_data = [order_data] + self.pending_orders_data[:19]
-
-            # FastAPI 이벤트 트리거 (UI 업데이트)
-            pending_orders_response_event.set()
 
     def send_order(self, trade_type, stock_code, quantity, price):
         """
@@ -388,7 +446,6 @@ def start_kiwoom_server():
         app.processEvents()
 
     kiwoom.fetch_stock_list()
-    kiwoom.register_real_pending_orders()
     stock_codes = [code for code, _ in kiwoom.stock_list]
     kiwoom.request_real_data("1000", ";".join(stock_codes), "10")
 
@@ -439,7 +496,7 @@ def periodic_save_daily_data(kiwoom):
     """
     while not stop_event.is_set():  # stop_event가 set() 되면 루프 종료
         now = datetime.datetime.now()
-        if now.hour == 16 and now.minute == 0:  # 매일 16:00에 저장
+        if now.hour == 15 and now.minute == 55:  # 매일 16:00에 저장
             print("[DEBUG] Fetching daily data for all stocks...")
             kiwoom.fetch_stock_list()
             for stock_code, _ in kiwoom.stock_list:
@@ -542,16 +599,47 @@ async def get_account_info():
     return JSONResponse(content={"status": "success", "account_info": kiwoom.account_info})
 
 @app.get("/account/pending-orders")
-async def get_pending_orders():
+async def get_real_time_pending_orders():
     """ ✅ 실시간 미체결 내역 반환 """
     global kiwoom
     if not kiwoom or not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
-    print("[DEBUG] FastAPI received request for real-time pending orders!")
-    print(kiwoom.pending_orders_data)
+    print("[DEBUG] FastAPI received request for Real-time Pending Orders!")
+    
+    # 🔹 이벤트 초기화
+    pending_orders_response_event.clear()
+    
+    # ✅ 실시간 미체결 요청
+    kiwoom.request_real_time_pending_orders()
+
+    try:
+        await asyncio.wait_for(pending_orders_response_event.wait(), timeout=5)
+    except asyncio.TimeoutError:
+        print("[ERROR] Real-time Pending Orders request timed out.")
+        raise HTTPException(status_code=408, detail="Real-time Pending Orders request timed out.")
 
     return JSONResponse(content={"status": "success", "data": kiwoom.pending_orders_data})
+
+class CancelOrderRequest(BaseModel):
+    order_number: str  # ✅ 반드시 문자열로 처리
+
+@app.post("/account/cancel-order")
+async def cancel_order(request: CancelOrderRequest):
+    """키움 API를 통해 미체결 주문 취소"""
+    order_number = request.order_number
+    global kiwoom
+    if not kiwoom or not kiwoom.connected:
+        raise HTTPException(status_code=400, detail="Kiwoom API가 연결되지 않았습니다.")
+
+    print(f"[DEBUG] 주문 취소 요청 수신: {order_number}")
+
+    try:
+        result = kiwoom.cancel_order(order_number)
+        return {"status": "success", "message": "주문 취소 요청 완료", "result_code": result}
+    except Exception as e:
+        print(f"[ERROR] 주문 취소 실패: {e}")
+        return {"status": "failure", "message": f"주문 취소 중 오류 발생: {e}"}
 
 @app.on_event("startup")
 def startup_event():
