@@ -201,7 +201,7 @@ def periodic_save_real_data(kiwoom, interval=5):
 def periodic_save_daily_data(kiwoom):
     while True:
         now = datetime.datetime.now()
-        if now.hour == 16 and now.minute == 00:  # 일봉 데이터를 저장할 시간 설정
+        if now.hour == 15 and now.minute == 32:  # 일봉 데이터를 저장할 시간 설정
             kiwoom.fetch_stock_list()
             kiwoom.process_next_stock()
         time.sleep(60)

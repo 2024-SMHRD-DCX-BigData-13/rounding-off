@@ -13,10 +13,11 @@ from mysql.connector import pooling, Error
 
 app = FastAPI()
 stop_event = Event()
-holdings_response_event = asyncio.Event()
-trade_history_response_event = asyncio.Event()
-account_response_event = asyncio.Event()
-pending_orders_response_event = asyncio.Event()
+holdings_response_event = asyncio.Event() # 보유 종목 이벤트
+trade_history_response_event = asyncio.Event() # 거래 내역 이벤트
+account_response_event = asyncio.Event() # 계좌 정보 이벤트
+pending_orders_response_event = asyncio.Event() # 미체결 내역 이벤트
+
 
 # 데이터 정리 함수
 def clean_price(raw_price):
@@ -31,18 +32,22 @@ class KiwoomAPI(QAxWidget):
     def __init__(self, db_pool):
         super().__init__()
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
+
         self.login_event_loop = QEventLoop()
         self.data_event_loop = QEventLoop()
         self.connected = False
+
         self.real_data = {}  # 실시간 데이터 저장
         self.data = []  # 과거 데이터 저장
         self.holdings_data = []  # 보유 종목 저장 리스트
         self.trade_history_data = []  # 거래 내역 저장 리스트
-        self.current_stock = None
-        self.stock_list = []
+        self.stock_list = []  # 종목 리스트 저장
         self.account_info = {}  # 계좌 정보 저장
         self.pending_orders_data = []  # 미체결 내역 저장
+
+        self.current_stock = None
         self.account_no = None  # 계좌번호 저장
+
         self.db_pool = db_pool
 
         # 이벤트 연결
@@ -52,11 +57,13 @@ class KiwoomAPI(QAxWidget):
         self.OnReceiveMsg.connect(self._on_receive_msg)
 
     def login(self):
+        # 로그인 함수
         print("[DEBUG] Attempting to log in...")
         self.dynamicCall("CommConnect()")
         self.login_event_loop.exec_()
 
     def _on_event_connect(self, err_code):
+        # 로그인 체크 함수
         if err_code == 0:
             print("[DEBUG] Login successful!")
             self.connected = True
@@ -66,7 +73,7 @@ class KiwoomAPI(QAxWidget):
         self.login_event_loop.exit()
 
     def request_holdings(self):
-        """ 보유 종목 조회 요청 """
+        # 보유 종목 조회 요청
         if not self.account_no:
             print("[ERROR] Account number is not available.")
             return
@@ -83,13 +90,41 @@ class KiwoomAPI(QAxWidget):
 
         # 🔹 QEventLoop 사용 제거 & 비동기 처리
         QTimer.singleShot(5000, lambda: print("[DEBUG] Holdings request completed."))  # 5초 후 로그 확인용
+
+    def request_trade_history(self):
+        # 거래 내역 조회 요청
+        if not self.account_no:
+            print("계좌 번호가 없음")
+            return
+
+        print("계좌번호 : ", self.account_no , "거래 내역 조회 요청 중")
+
+        self.trade_history_data = []  # 기존 데이터 초기화
+        print("기존 데이터 초기화 완료 : ", self.trade_history_data)
+
+        last_90_days = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime("%Y%m%d")  # 🔹 최근 90일 조회
+
+        self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
+        self.dynamicCall("SetInputValue(QString, QString)", "조회기간", last_90_days)  # 🔹 조회 기간 30일로 변경
+        self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+        self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "1")  # 🔹 전체 체결 내역 조회
+
+        result = self.dynamicCall("CommRqData(QString, QString, int, QString)", "체결내역조회", "opw00007", 0, "9002")
+        print(f"0이면 요청 성공: {result}")  # 🔹 요청이 정상적으로 들어갔는지 확인
+
+        if result != 0:
+            print(f"[ERROR] 거래 내역 요청 실패 (Error Code: {result})")
+            return
+
+        print("[INFO] 거래 내역 요청 성공")
+    
     def request_account_info(self):
-        """ 계좌 정보 요청 (예수금, 출금 가능 금액, 주문 가능 금액, 계좌번호) """
+        # 계좌 정보 요청 (예수금, 출금 가능 금액, 주문 가능 금액, 계좌번호)
         if not self.account_no:
             print("[ERROR] Account number is not available.")
             return
 
-        print("[DEBUG] Requesting account info...")
+        print("계좌 정보 요청!")
         self.account_info = {}  # 기존 데이터 초기화
 
         self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
@@ -97,75 +132,86 @@ class KiwoomAPI(QAxWidget):
 
         self.dynamicCall("CommRqData(QString, QString, int, QString)", "예수금상세현황", "opw00001", 0, "9003")
 
-    def request_real_time_pending_orders(self):
-        """ 실시간 미체결 데이터 요청 """
+    def request_pending_orders(self):
+        # 미체결 내역 요청
         if not self.account_no:
-            print("[ERROR] No account number available.")
+            print("계좌 정보 없음!")
             return
 
-        print("[DEBUG] Requesting Real-time Pending Orders...")
+        print("[DEBUG] Requesting pending orders...")
+        self.pending_orders_data = []  # 기존 데이터 초기화
 
         self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
         self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
 
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", "실시간미체결요청", "opt10075", 0, "9006")
-
-    def request_trade_history(self):
-        """ 거래 내역 조회 요청 """
-        if not self.account_no:
-            print("[ERROR] Account number is not available.")
-            return
-
-        print("[DEBUG] Requesting trade history data...")
-
-        self.trade_history_data = []  # 기존 데이터 초기화
-
-        last_90_days = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime("%Y%m%d")  # 🔹 최근 90일 조회
-
-        self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
-        self.dynamicCall("SetInputValue(QString, QString)", "조회기간", last_90_days)  # 🔹 조회 기간 30일로 변경
-        self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
-        self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "0")  # 🔹 전체 체결 내역 조회
-
-        result = self.dynamicCall("CommRqData(QString, QString, int, QString)", "체결내역조회", "opw00007", 0, "9002")
-        print(f"[INFO] Trade history request sent: {result}")  # 🔹 요청이 정상적으로 들어갔는지 확인
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "미체결내역조회", "opt10075", 0, "9004")
 
 
     def fetch_stock_list(self):
-        print("[DEBUG] Fetching stock list from database...")
+        print("DB에서 데이터 종목 코드,이름 요청 중")
         try:
             connection = self.db_pool.get_connection()
             cursor = connection.cursor()
             cursor.execute("SELECT stock_idx, stock_name FROM stocks")
             self.stock_list = cursor.fetchall()
-            print(f"[DEBUG] Retrieved {len(self.stock_list)} stocks.")
+            print(f"DB에서 받은 데이터 : {self.stock_list}")
         except Error as err:
-            print(f"[ERROR] Database error: {err}")
+            print(f"데이터 베이스 에러러: {err}")
         finally:
             cursor.close()
             connection.close()
 
-    def request_stock_data(self, stock_code):
-        """ 과거 일봉 데이터 요청 """
-        print(f"[DEBUG] Requesting historical data for stock code: {stock_code}")
+    def start_stock_requests(self, stock_list):
+        """
+        주식 리스트를 받아서 순차적으로 조회 요청 시작
+        """
+        self.stock_list = stock_list
+        self.process_next_stock()
+
+    def process_next_stock(self):
+        """
+        다음 종목 데이터를 요청합니다. 모든 종목이 처리되면 종료.
+        """
+        if not self.stock_list:
+            print("[INFO] 모든 종목 처리 완료.")
+            return
+
+        self.current_stock = self.stock_list.pop(0)
+        stock_code, stock_name = self.current_stock
+        print(f"[INFO] {stock_name} ({stock_code}) 데이터 요청 중...")
+        self.request_stock_data(stock_code, stock_name)
+    
+    def request_stock_data(self, stock_code, stock_name):
+        """
+        prev_next 없이 한 번의 요청만 사용하여 데이터 가져오기
+        """
+        print(f"[INFO] {stock_code} 과거 데이터 요청 중...")
+
         self.data = []
         end_date = datetime.datetime.now().strftime("%Y%m%d")
+        start_date = (datetime.datetime.now() - datetime.timedelta(days=180)).strftime("%Y%m%d")  # 🔹 2년치 조회
 
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", stock_code)
-        self.dynamicCall("SetInputValue(QString, QString)", "기준일자", end_date)
+        self.dynamicCall("SetInputValue(QString, QString)", "기준일자", end_date)  # 🔹 기준일을 넓게 설정하여 한번에 가져오기
         self.dynamicCall("SetInputValue(QString, QString)", "수정주가구분", "1")
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회", "opt10081", 0, "0101")
-        self.data_event_loop.exec_()
+
+        result = self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회", "opt10081", 0, "0101")
+
+        if result != 0:
+            print(f"[ERROR] 요청 실패 - 오류 코드: {result}")
+            print("[WARNING] 60초 대기 후 재시도")
+            time.sleep(60)  # 🔹 `-300` 발생 시 60초 대기 후 재시도
+            return
 
     def cancel_order(self, order_number):
         """
         키움 API 미체결 주문 취소 요청
         """
         if not self.account_no:
-            print("[ERROR] Account number is not available.")
+            print("계좌 번호가 없음음")
             return
 
-        print(f"[DEBUG] Cancelling order: {order_number}")
+        print(f"취소할 주문번호: {order_number}")
 
         result = self.dynamicCall(
             "SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
@@ -181,15 +227,21 @@ class KiwoomAPI(QAxWidget):
                 order_number,  # 원주문번호
             ]
         )
-        print(f"[INFO] Order cancellation request sent: {order_number}, Result: {result}")
+        print(f"취소 요청한 주문번호: {order_number}, 결과: {result}")
         return result
 
-    def _on_receive_trdata(self, screen_no, rqname, trcode, recordname, prev_next,sRQName):
-        count = 0
+    def _on_receive_trdata(self, screen_no, rqname, trcode, record_name, prev_next, data_len, err_code, msg, sRQName):
+        stock_data_cnt = 0
+        holding_cnt = 0
+        trading_lst_cnt = 0
+        pending_cnt = 0
+        hold_next = 0
+        stock_data_next = 0
+
         if rqname == "주식일봉차트조회":
-            count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-            print(f"[DEBUG] Received {count} data points for stock code: {self.current_stock[0]}")
-            for i in range(count):
+            data_count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+
+            for i in range(data_count):
                 date = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "일자").strip()
                 open_price = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "시가").strip()
                 high_price = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "고가").strip()
@@ -206,36 +258,17 @@ class KiwoomAPI(QAxWidget):
                     "volume": int(volume)
                 })
 
-            if prev_next == "2":
-                print(f"[DEBUG] Fetching next batch of data for stock code: {self.current_stock[0]}")
-                self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회", "opt10081", 2, "0101")
-            else:
-                print(f"[DEBUG] Completed fetching data for stock code: {self.current_stock[0]}")
-                self.save_to_db()
-                self.data_event_loop.exit()
-
-            """TR 데이터 수신 이벤트 핸들러"""
-
-        elif rqname == "예수금상세현황":
-            print("[DEBUG] Received Account Info Data")
-            예수금 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "예수금").strip())
-            출금가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "출금가능금액").strip())
-            주문가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "주문가능금액").strip())
-
-            self.account_info = {
-                "account_number": self.account_no,
-                "balance": 예수금,
-                "available_withdraw": 출금가능금액,
-                "order_available": 주문가능금액
-            }
-
-            print("[INFO] Account Info Updated:", self.account_info)
-            account_response_event.set()
+            self.save_to_db()
+            time.sleep(3)  # 🔹 요청 간격 조정
+            self.process_next_stock()  # 🔹 다음 종목 요청
 
         elif rqname == "계좌평가잔고내역조회":
-            count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+            hold_next = prev_next
+            print(f"[DEBUG] 받은 TR 데이터: {rqname}, 화면넘버: {screen_no}, 다음요청 여부: {hold_next}")
+            holding_cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+            print(f"[DEBUG] 보유 종목 확인: {holding_cnt}")  # 🔹 데이터 개수 확인 로그 추가
 
-            for i in range(count):
+            for i in range(holding_cnt):
                 stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip()
                 current_price = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "현재가").strip())
                 buy_price = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "매입가").strip())
@@ -250,102 +283,94 @@ class KiwoomAPI(QAxWidget):
                     "quantity": quantity
                 })
 
+            print("저장된 데이터:", self.holdings_data)  # 🔹 데이터가 저장되었는지 확인 로그 추가
             holdings_response_event.set()
 
-        elif sRQName == "실시간미체결요청":
-            print("[DEBUG] 실시간 미체결 데이터 요청 수신")
+        elif rqname == "체결내역조회":
+            trading_lst_cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+            print(f"[DEBUG] TR 응답 받음: {rqname}, count={trading_lst_cnt}, msg={msg}")
 
-            count = self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName)
-            print(f"[DEBUG] 현재 미체결 주문 개수: {count}")
+            if trading_lst_cnt == 0:
+                print("받은 거래내역 데이터 없음!")  # 🔹 데이터가 없는 경우 로그 추가
+                return  # 🔹 데이터가 없으면 추가 진행 안 함
 
-            self.not_signed_account_dict = {}  # ✅ 기존 미체결 데이터 초기화
+            self.trade_history_data.clear()  # 🔹 새로운 요청마다 초기화
+
+            for i in range(trading_lst_cnt):
+                date_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결시간").strip()
+                stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip()
+                price_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결가").strip()
+                quantity_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결량").strip()
+                trade_type = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문구분").strip()
+
+                # 🔹 원본 데이터 로그 추가
+                print(f"받은 데이터 - 날짜: {date_raw}, 종목: {stock_name}, 가격: {price_raw}, 수량: {quantity_raw}, 거래타입: {trade_type}")
+
+                # 🔹 데이터가 비어 있으면 "N/A" 처리 (빈 문자열 방지)
+                date = date_raw if date_raw else "N/A"
+                price = int(price_raw) if price_raw.replace("-", "").isdigit() else "N/A"
+                quantity = int(quantity_raw) if quantity_raw.replace("-", "").isdigit() else "N/A"
+
+                self.trade_history_data.append({
+                    "date": date,
+                    "stock_name": stock_name if stock_name else "N/A",
+                    "price": price,
+                    "quantity": quantity,
+                    "type": trade_type if trade_type else "N/A"
+                })
+
+            if self.trade_history_data:
+                print("저장된 거래 내역 데이터:", self.trade_history_data)
+            else:
+                print("아직 거래내역 데이터가 비어있음")
+
+            # 🔹 FastAPI에 데이터 수신 완료 신호 보내기
+            trade_history_response_event.set()
+
+        elif rqname == "예수금상세현황":
+            print("[DEBUG] Received Account Info Data")
+            예수금 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "예수금").strip())
+            출금가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "출금가능금액").strip())
+            주문가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "주문가능금액").strip())
+
+            self.account_info = {
+                "account_number": self.account_no,
+                "balance": 예수금,
+                "available_withdraw": 출금가능금액,
+                "order_available": 주문가능금액
+            }
+
+            print("받은 계좌 정보 :", self.account_info)
+            account_response_event.set()
+        
+        elif rqname == "미체결내역조회":
+            print("[DEBUG] Received Pending Orders Data")
+            count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+            print(f"[DEBUG] Pending Orders Count: {count}")
 
             for i in range(count):
-                order_number = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문번호").strip()
-                stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "종목명").strip()
-                order_type = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문구분").strip()
-                price = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문가격").strip()
-                quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문수량").strip()
-                not_signed_quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "미체결수량").strip()
-                signed_quantity = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "체결량").strip()
-                current_price = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "현재가").strip()
-                status = self.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, i, "주문상태").strip()
+                order_no = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문번호").strip()
+                date = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문시간").strip()
+                stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip()
+                price = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문가격").strip())
+                quantity = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문수량").strip())
+                status = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문상태").strip()
 
-                # 🔹 체결 완료된 주문은 저장하지 않음
-                if status in ["체결", "거부"]:
-                    continue
+                self.pending_orders_data.append({
+                    "date": date,
+                    "stock_name": stock_name,
+                    "price": price,
+                    "quantity": quantity,
+                    "status": status
+                })
 
-                # 🔹 숫자형 데이터 정리
-                price = f"{int(price):,}원" if price.replace("-", "").isdigit() else "-"
-                quantity = f"{int(quantity):,}개" if quantity.replace("-", "").isdigit() else "-"
-                not_signed_quantity = f"{int(not_signed_quantity):,}개" if not_signed_quantity.replace("-", "").isdigit() else "-"
-                signed_quantity = f"{int(signed_quantity):,}개" if signed_quantity.replace("-", "").isdigit() else "-"
-                current_price = f"{int(current_price):,}원" if current_price.replace("-", "").isdigit() else "-"
-
-                # 🔹 딕셔너리에 저장
-                self.not_signed_account_dict[order_number] = {
-                    "주문번호": order_number,
-                    "종목명": stock_name,
-                    "주문구분": order_type,
-                    "주문가격": price,
-                    "주문수량": quantity,
-                    "미체결수량": not_signed_quantity,
-                    "체결량": signed_quantity,
-                    "현재가": current_price,
-                    "주문상태": status
-                }
-
-            # ✅ 주문번호 기준 정렬
-            sorted_orders = sorted(self.not_signed_account_dict.values(), key=lambda x: x["주문번호"])
-
-            print("[INFO] 최신 미체결 주문 목록:", sorted_orders)
-
-            # ✅ FastAPI 이벤트 트리거 (UI 업데이트)
-            self.pending_orders_data = sorted_orders  # 🔹 JSON 변환 가능하도록 리스트 저장
+            print("[INFO] Pending Orders Updated:", self.pending_orders_data)
             pending_orders_response_event.set()
-
-
-        elif rqname == "체결내역조회":
-            count = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-
-        if count == 0:
-            return
-
-        self.trade_history_data.clear()
-
-        for i in range(count):
-            date_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결시간").strip()
-            stock_name = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip()
-            price_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결가").strip()
-            quantity_raw = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결량").strip()
-            trade_type = self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문구분").strip()
-
-
-            date = date_raw if date_raw else "N/A"
-            price = int(price_raw) if price_raw.replace("-", "").isdigit() else "N/A"
-            quantity = int(quantity_raw) if quantity_raw.replace("-", "").isdigit() else "N/A"
-
-            self.trade_history_data.append({
-                "date": date,
-                "stock_name": stock_name if stock_name else "N/A",
-                "price": price,
-                "quantity": quantity,
-                "type": trade_type if trade_type else "N/A"
-            })
-
-        if self.trade_history_data:
-            print("[INFO] Trade History Data Updated:", self.trade_history_data)
-        else:
-            print("[WARNING] Trade history is still empty after receiving TR data.")
-
-        # 🔹 FastAPI에 데이터 수신 완료 신호 보내기
-        trade_history_response_event.set()
-        
 
 
     def save_to_db(self):
         if not self.current_stock:
-            print("[ERROR] No current stock data to save.")
+            print("저장할 주식 데이터가 없음.")
             return
 
         stock_code, stock_name = self.current_stock
@@ -366,8 +391,8 @@ class KiwoomAPI(QAxWidget):
             ]
             cursor.executemany(insert_query, insert_values)
             connection.commit()
-
-            print(f"[INFO] Inserted {len(insert_values)} rows for stock code {stock_code}.")
+            
+            print(f"저장중: {len(insert_values)} 해당종목에 대한 데이터 저장: {stock_code}.")
         except Error as err:
             print(f"[ERROR] Database error: {err}")
         finally:
@@ -376,11 +401,11 @@ class KiwoomAPI(QAxWidget):
 
     def request_real_data(self, screen_no, codes, fid_list):
         try:
-            print(f"[DEBUG] Registering real-time data for codes: {codes}")
+            print(f"해당 종목에 대한 실시간 데이터 요청 : {codes}")
             self.dynamicCall("SetRealReg(QString, QString, QString, QString)", screen_no, codes, fid_list, "0")
-            print(f"[DEBUG] Real-time data registration successful for codes: {codes}")
+            print(f"실시간 데이터 요청 성공: {codes}")
         except Exception as e:
-            print(f"[ERROR] Real-time data registration failed: {str(e)}")
+            print(f"실시간 데이터 요청 실패: {str(e)}")
 
     def _on_receive_real_data(self, code, real_type, data):
         if real_type == "주식체결":
@@ -391,9 +416,7 @@ class KiwoomAPI(QAxWidget):
                 # print(f"[DEBUG] Real-time data updated for {code}: {current_price}")
 
     def send_order(self, trade_type, stock_code, quantity, price):
-        """
-        키움 API 매수/매도 요청
-        """
+        # 키움 API 매수/매도 요청
         order_type = 1 if trade_type == "BUY" else 2  # 1: 매수, 2: 매도
         result = self.dynamicCall(
             "SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
@@ -422,9 +445,7 @@ class KiwoomAPI(QAxWidget):
 kiwoom = None
 
 def start_kiwoom_server():
-    """
-    QApplication 및 KiwoomAPI를 메인 스레드에서 실행
-    """
+    # QApplication 및 KiwoomAPI를 메인 스레드에서 실행
     global kiwoom  # 전역 변수 사용
     db_pool = pooling.MySQLConnectionPool(
         pool_name="mypool",
@@ -442,7 +463,7 @@ def start_kiwoom_server():
     kiwoom.login()
 
     while not kiwoom.connected:
-        print("[DEBUG] Waiting for login...")
+        print("로그인 중")
         app.processEvents()
 
     kiwoom.fetch_stock_list()
@@ -460,16 +481,14 @@ class TradeRequest(BaseModel):
     price: int       # 주문 가격
 
 def periodic_save_real_data(kiwoom, interval=5):
-    """
-    실시간 데이터를 주기적으로 저장
-    """
+    # 실시간 데이터를 주기적으로 저장
     while not stop_event.is_set():  # stop_event가 set() 되면 루프 종료
         time.sleep(interval)
         if not kiwoom.real_data:
-            print("[INFO] No real-time data available. Skipping database save.")
+            print("실시간 데이터가 없음 저장 안함")
             continue
 
-        print("[DEBUG] Checking for real-time data to save...")
+        print("실시간 데이터 체크 중.")
         try:
             connection = kiwoom.db_pool.get_connection()
             cursor = connection.cursor()
@@ -482,7 +501,7 @@ def periodic_save_real_data(kiwoom, interval=5):
             cursor.executemany(query, values)
             connection.commit()
 
-            print(f"[DEBUG] Real-time data saved: {len(values)} records")
+            print(f"실시간 데이터 저장 완료: {len(values)}")
         except Error as err:
             print(f"[ERROR] Database error: {err}")
         finally:
@@ -491,23 +510,24 @@ def periodic_save_real_data(kiwoom, interval=5):
 
 
 def periodic_save_daily_data(kiwoom):
-    """
-    일봉 데이터를 매일 저장
-    """
+    # 일봉 데이터를 매일 저장
     while not stop_event.is_set():  # stop_event가 set() 되면 루프 종료
         now = datetime.datetime.now()
         if now.hour == 15 and now.minute == 55:  # 매일 16:00에 저장
-            print("[DEBUG] Fetching daily data for all stocks...")
+            print("일봉 데이터 저장 중")
             kiwoom.fetch_stock_list()
-            for stock_code, _ in kiwoom.stock_list:
-                kiwoom.request_stock_data(stock_code)
+            stock_list = kiwoom.stock_list
+            if not stock_list:
+                print("[WARNING] 종목 리스트가 비어 있음!")
+                return
+
+            kiwoom.start_stock_requests(stock_list)
+
         time.sleep(60)  # 1분 대기
 
 @app.post("/trade/buy")
 async def buy_stock(request: TradeRequest):
-    """
-    매수 요청 처리
-    """
+    # 매수 요청 처리
     if not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
@@ -521,9 +541,7 @@ async def buy_stock(request: TradeRequest):
 
 @app.post("/trade/sell")
 async def sell_stock(request: TradeRequest):
-    """
-    매도 요청 처리
-    """
+    # 매도 요청 처리
     if not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
@@ -536,7 +554,7 @@ async def sell_stock(request: TradeRequest):
 
 @app.get("/account/holdings")
 async def get_holdings():
-    """보유 종목 조회"""
+    # 보유 종목 조회
     global kiwoom
     if not kiwoom or not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
@@ -558,12 +576,12 @@ async def get_holdings():
 
 @app.get("/account/trade-history")
 async def get_trade_history():
-    """거래 내역 조회"""
+    # 거래 내역 조회
     global kiwoom
     if not kiwoom or not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
-    print("[DEBUG] FastAPI received request for trade history!")
+    print("거래 내역 조회 실행!")
 
     # 🔹 이벤트 초기화
     trade_history_response_event.clear()
@@ -580,53 +598,45 @@ async def get_trade_history():
 
 @app.get("/account/info")
 async def get_account_info():
-    """ ✅ 계좌 정보 요청 """
+    # 키움 API에서 계좌 정보를 요청하고 반환
     global kiwoom
     if not kiwoom or not kiwoom.connected:
         raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
 
     print("[DEBUG] FastAPI received request for account info!")
+
+    # 🔹 이벤트 초기화
     account_response_event.clear()
+    pending_orders_response_event.clear()
 
+    # 🔹 키움 API에 계좌 정보 & 미체결 내역 요청
     kiwoom.request_account_info()
+    kiwoom.request_pending_orders()
 
+    # 🔹 데이터가 올 때까지 최대 5초 동안 기다림
     try:
         await asyncio.wait_for(account_response_event.wait(), timeout=5)
+        await asyncio.wait_for(pending_orders_response_event.wait(), timeout=5)
     except asyncio.TimeoutError:
         print("[ERROR] Account info request timed out.")
         raise HTTPException(status_code=408, detail="Account info request timed out.")
 
-    return JSONResponse(content={"status": "success", "account_info": kiwoom.account_info})
+    print("[INFO] Sending account info & pending orders to main server:")
+    print("Account Info:", kiwoom.account_info)
+    print("Pending Orders:", kiwoom.pending_orders_data)
 
-@app.get("/account/pending-orders")
-async def get_real_time_pending_orders():
-    """ ✅ 실시간 미체결 내역 반환 """
-    global kiwoom
-    if not kiwoom or not kiwoom.connected:
-        raise HTTPException(status_code=400, detail="Kiwoom API is not connected.")
-
-    print("[DEBUG] FastAPI received request for Real-time Pending Orders!")
-    
-    # 🔹 이벤트 초기화
-    pending_orders_response_event.clear()
-    
-    # ✅ 실시간 미체결 요청
-    kiwoom.request_real_time_pending_orders()
-
-    try:
-        await asyncio.wait_for(pending_orders_response_event.wait(), timeout=5)
-    except asyncio.TimeoutError:
-        print("[ERROR] Real-time Pending Orders request timed out.")
-        raise HTTPException(status_code=408, detail="Real-time Pending Orders request timed out.")
-
-    return JSONResponse(content={"status": "success", "data": kiwoom.pending_orders_data})
+    return JSONResponse(content={
+        "status": "success",
+        "account_info": kiwoom.account_info,
+        "pending_orders": kiwoom.pending_orders_data
+    })
 
 class CancelOrderRequest(BaseModel):
-    order_number: str  # ✅ 반드시 문자열로 처리
+    order_number: str  # 반드시 문자열로 처리
 
 @app.post("/account/cancel-order")
 async def cancel_order(request: CancelOrderRequest):
-    """키움 API를 통해 미체결 주문 취소"""
+    # 키움 API를 통해 미체결 주문 취소
     order_number = request.order_number
     global kiwoom
     if not kiwoom or not kiwoom.connected:
