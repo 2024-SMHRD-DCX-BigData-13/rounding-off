@@ -458,3 +458,15 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchHoldings();
   fetchTradeHistory();
 });
+
+const tdV = document.getElementById('total-profit-rate');
+function loding () {
+  if (tdV.textContent.trim() !== ""){
+    const loading = document.getElementById("loading");
+    const content = document.getElementById("content");
+    const body = document.body;
+    loading.style.display = "none"; // 로딩 화면 숨김
+    content.style.display = "block"; // 실제 콘텐츠 표시
+    body.style.overflow="";
+ }
+}
