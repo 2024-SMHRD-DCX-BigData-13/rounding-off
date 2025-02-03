@@ -175,39 +175,41 @@
         <!-- 투자 현황 -->
         <section id="trade-section">
           <h1><b>거래 내역</b></h1>
-          <table>
-            <thead>
-              <tr>
-                <th>날짜</th>
-                <th>종목명</th>
-                <th>거래가</th>
-                <th>거래량</th>
-                <th>구분</th>
-              </tr>
-            </thead>
-            <tbody  id ="trade-table-body">
-              <!-- js로 데이터 받아서 생성 되게 변경됨 -->
-              <!-- <tr>
-                <td>2025.01.15</td>
-                <td>삼성전자</td>
-                <td>+720,000원(1.1%)</td>
-                <td>65,160,000원</td>
-                <td>1200주</td>
-                <td>매도</td>
-              </tr>
-              <tr>
-                <td>2025.01.15</td>
-                <td>LG에너지솔루션</td>
-                <td>+5,000,000원(0.1%)</td>
-                <td>3,520,000,000원</td>
-                <td>10000주</td>
-                <td>매도</td>
-              </tr> -->
-              
-            </tbody>
-          </table>
+          <div id="trade-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>종목명</th>
+                  <th>거래가</th>
+                  <th>거래량</th>
+                  <th>구분</th>
+                </tr>
+              </thead>
+              <tbody  id ="trade-table-body">
+                <!-- js로 데이터 받아서 생성 되게 변경됨 -->
+                <!-- <tr>
+                  <td>2025.01.15</td>
+                  <td>삼성전자</td>
+                  <td>+720,000원(1.1%)</td>
+                  <td>65,160,000원</td>
+                  <td>1200주</td>
+                  <td>매도</td>
+                </tr>
+                <tr>
+                  <td>2025.01.15</td>
+                  <td>LG에너지솔루션</td>
+                  <td>+5,000,000원(0.1%)</td>
+                  <td>3,520,000,000원</td>
+                  <td>10000주</td>
+                  <td>매도</td>
+                </tr> -->
+                
+              </tbody>
+            </table>
               <button id="his-load-more-btn" style="display: none;" class="btn btn-primary">더보기</button>
           <!-- 그래프 캔버스 -->
+          </div>
         </section>
       </div>
     </main>
