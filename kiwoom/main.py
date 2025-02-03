@@ -117,7 +117,7 @@ class KiwoomAPI(QAxWidget):
             logging.error(f"로그인 실패 - 에러 코드: {err_code}")
         self.login_event_loop.exit()
 
-    # ── TR 요청 메서드 (내부 do_request 함수로 실제 API 호출을 함)
+    # ── TR 요청 메서드 (내부 do_request 함수로 실제 API 호출)
     def request_holdings(self):
         if not self.account_no:
             logging.error("계좌번호가 없습니다.")
@@ -145,8 +145,9 @@ class KiwoomAPI(QAxWidget):
         def do_request():
             self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
             self.dynamicCall("SetInputValue(QString, QString)", "체결구분", "2")
+            # TR 코드 opt10075를 사용하여 체결 내역 조회 (체결시간 등만 제공)
             result = self.dynamicCall("CommRqData(QString, QString, int, QString)",
-                                      "체결내역조회", "opt10075", 0, "9002")
+                                        "체결내역조회", "opt10075", 0, "9002")
             logging.debug(f"체결내역조회 요청 결과: {result}")
             if result != 0:
                 logging.error(f"거래 내역 요청 실패 (에러 코드: {result})")
@@ -293,11 +294,17 @@ class KiwoomAPI(QAxWidget):
             self.trade_history_data.clear()
             for i in range(cnt):
                 trade = {
-                    "date": self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결시간").strip(),
-                    "stock_name": self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip(),
-                    "price": int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결가").strip()),
-                    "quantity": int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결량").strip()),
-                    "type": self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문구분").strip()
+                    # opt10075 사용 시 "체결시간" 항목이 제공됩니다.
+                    "date": self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                               trcode, rqname, i, "체결시간").strip(),
+                    "stock_name": self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                   trcode, rqname, i, "종목명").strip(),
+                    "price": int(self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                  trcode, rqname, i, "체결가").strip()),
+                    "quantity": int(self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                     trcode, rqname, i, "체결량").strip()),
+                    "type": self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                             trcode, rqname, i, "주문구분").strip()
                 }
                 self.trade_history_data.append(trade)
             logging.debug(f"거래 내역 데이터: {self.trade_history_data}")
