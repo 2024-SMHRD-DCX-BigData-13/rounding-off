@@ -22,7 +22,6 @@ body {
   flex-direction: column; /* 위에서 아래로 정렬 */
   justify-content: space-between;
   min-height: 100vh;
-  overflow: hidden;
 }
 
 

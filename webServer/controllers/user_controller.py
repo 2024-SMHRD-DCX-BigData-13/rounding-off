@@ -220,3 +220,46 @@ async def login(request: Request, email: str = Form(...)):
             
     finally:
         close_connection(connection)
+
+class DeleteProfileRequest(BaseModel):
+    email: str
+@router.post("/delete-profile")
+async def delete_profile(request: Request, request_data: DeleteProfileRequest):
+    email = request_data.email
+    if not email:
+        raise HTTPException(status_code=400, detail="이메일이 제공되지 않았습니다.")
+    
+    connection = create_connection()  # 데이터베이스 연결 (별도 구현)
+    if not connection:
+        raise HTTPException(status_code=500, detail="데이터베이스 연결에 실패했습니다.")
+    
+    try:
+        with connection.cursor(dictionary=True) as cursor:
+            # 트랜잭션 시작 (자동 커밋이 해제되어 있다고 가정)
+            # 자식 테이블(user_favorites)에서 해당 이메일과 관련된 데이터 삭제
+            query_favorites = "DELETE FROM user_favorites WHERE email = %s"
+            cursor.execute(query_favorites, (email,))
+            
+            # 부모 테이블(users)에서 해당 이메일의 사용자 삭제
+            query_user = "DELETE FROM users WHERE email = %s"
+            cursor.execute(query_user, (email,))
+            
+            connection.commit()  # 트랜잭션 커밋
+            
+            # 삭제된 행의 개수를 확인 (cursor.rowcount는 마지막 실행한 쿼리의 삭제 행 수를 반환하므로, 
+            # 필요하다면 별도의 검증 로직을 추가할 수 있습니다.)
+            if cursor.rowcount == 0:
+                return JSONResponse(
+                    {"success": False, "message": "해당 이메일의 사용자를 찾을 수 없습니다."}
+                )
+            else:
+                # 회원 탈퇴 성공 시 세션 클리어
+                request.session.clear()
+                return JSONResponse(
+                    {"success": True, "message": "회원 탈퇴가 완료되었습니다."}
+                )
+    except Exception as e:
+        connection.rollback()  # 에러 발생 시 롤백
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        close_connection(connection)  # 연결 종료 (별도 구현)

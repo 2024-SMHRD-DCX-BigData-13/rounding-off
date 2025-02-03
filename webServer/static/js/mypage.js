@@ -66,7 +66,7 @@ password2?.addEventListener("input", passwordComp);
    UI Update Functions
 =============================== */
 // [1] 거래 내역 UI 업데이트  
-// 원래대로 테이블이 길어지도록 하되, "더보기" 버튼 클릭 시 이미 생성된 행들을 재렌더링하지 않고 추가로 append하거나 제거하여 기존 행들이 위치를 유지하도록 함.
+// "더보기" 버튼 클릭 시 이미 생성된 행들을 추가/제거하여 기존 행들의 위치를 유지
 function updateTradeHistoryUI(trades) {
   const tableBody = document.getElementById("trade-table-body");
   const loadMoreBtn = document.getElementById("his-load-more-btn");
@@ -74,7 +74,6 @@ function updateTradeHistoryUI(trades) {
     console.error("Trade history UI elements not found.");
     return;
   }
-  // 원래대로 테이블이 늘어나게 하므로 container에 고정 높이나 overflow 스타일은 적용하지 않습니다.
   
   const maxLimit = 20;   // 최대 렌더링 건수
   const maxVisible = 5;  // 처음에 보여줄 건수
@@ -82,12 +81,12 @@ function updateTradeHistoryUI(trades) {
   // 최신 거래 내역이 위로 오도록 역순 정렬 후 최대 maxLimit 건 사용
   const sortedTrades = trades.slice().reverse().slice(0, maxLimit);
   
-  // 미리 각 행을 생성해서 배열에 저장
+  // 각 행을 미리 생성하여 배열에 저장
   const rows = sortedTrades.map(trade => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
-      <td style="text-align: center; vertical-align: middle; width: 25%;>
+      <td style="text-align: center; vertical-align: middle; width: 25%;">
         <div class="logomm">
           <img class="choicelogo" src="${stockLogo(trade.stock_name)}" alt="${trade.stock_name} Logo">
           ${trade.stock_name}
@@ -100,7 +99,7 @@ function updateTradeHistoryUI(trades) {
     return row;
   });
   
-  // 초기 렌더링: tableBody에 처음 maxVisible 행만 append
+  // 초기 렌더링: tableBody에 처음 maxVisible 행만 추가
   tableBody.innerHTML = "";
   for (let i = 0; i < maxVisible && i < rows.length; i++) {
     tableBody.appendChild(rows[i]);
@@ -119,13 +118,13 @@ function updateTradeHistoryUI(trades) {
   
   loadMoreBtn.onclick = () => {
     if (!showingAll) {
-      // 이미 생성된 나머지 행들을 순서대로 append
+      // 나머지 행들을 순서대로 추가
       for (let i = maxVisible; i < rows.length; i++) {
         tableBody.appendChild(rows[i]);
       }
       loadMoreBtn.textContent = "숨기기";
     } else {
-      // maxVisible 이후 행들을 제거 (이미 있는 행은 그대로 유지)
+      // maxVisible 이후 행들을 제거
       while (tableBody.children.length > maxVisible) {
         tableBody.removeChild(tableBody.lastElementChild);
       }
@@ -200,7 +199,8 @@ function updatePendingOrdersUI(orders) {
   };
 }
 
-// [4] 보유 종목 테이블 업데이트 및 총 수익률 계산, 차트 업데이트
+// [4] 보유 종목 테이블 업데이트 및 총 수익률 계산  
+// 차트 업데이트 호출은 제거하고, 보유 종목 데이터는 전역 변수(window.holdingsData)에 저장
 function updateHoldingsTable(stocks) {
   const tableBody = document.getElementById("my-stocks-table");
   if (!tableBody) {
@@ -239,15 +239,23 @@ function updateHoldingsTable(stocks) {
       cell.classList.add("negative-profit");
     }
   });
+  // 보유 종목 데이터는 전역 변수에 저장 (차트는 로딩 완료 후에 그립니다)
+  window.holdingsData = stocks;
 }
 
+// 차트 업데이트 함수 (변경 없음)
 function updateHoldingsChart(stocks) {
   const labels = stocks.map(stock => stock.stock_name);
   const values = stocks.map(stock => stock.current_price * stock.quantity);
   const backgroundColors = generateRandomColors(stocks.length);
-  const ctx = document.getElementById("accountPieChart")?.getContext("2d");
+  const canvas = document.getElementById("accountPieChart");
+  if (!canvas) {
+    console.error("Chart canvas element with id 'accountPieChart' not found.");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
   if (!ctx) {
-    console.error("Chart canvas not found.");
+    console.error("2D context could not be obtained from the canvas.");
     return;
   }
   if (window.myPieChart) {
@@ -278,6 +286,7 @@ function updateHoldingsChart(stocks) {
       }
     }
   });
+  console.log("차트가 생성되었습니다.");
 }
 
 /* ===============================
@@ -307,7 +316,8 @@ async function fetchHoldings() {
     if (data.status === "success") {
       const stocks = data.data;
       updateHoldingsTable(stocks);
-      updateHoldingsChart(stocks);
+      console.log("보유 종목 데이터 로드 완료");
+      // updateHoldingsChart()는 로딩 완료 시 호출됩니다.
     } else {
       console.error("보유 종목 데이터 로드 실패:", data.detail);
     }
@@ -451,6 +461,25 @@ document.getElementById("logoutButton")?.addEventListener("click", () => {
 /* ===============================
    Initialization on DOMContentLoaded
 =============================== */
+
+// 로딩 화면 관련 처리: total-profit-rate 요소의 텍스트가 채워지면 로딩 숨기고 콘텐츠 표시 후 차트 업데이트
+const tdV = document.getElementById('total-profit-rate');
+function loading () {
+  if (tdV.textContent.trim() !== ""){
+    const loadingElem = document.getElementById("loading");
+    const contentElem = document.getElementById("content");
+    loadingElem.style.display = "none"; // 로딩 화면 숨김
+    contentElem.style.display = "block"; // 실제 콘텐츠 표시
+    
+    // 전역 변수에 보유 종목 데이터가 있으면 차트 그리기
+    if (window.holdingsData) {
+      updateHoldingsChart(window.holdingsData);
+    } else {
+      console.warn("보유 종목 데이터가 없어 차트를 그릴 수 없습니다.");
+    }
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupProfileUpdate();
   setupScrollNavigation();
@@ -458,15 +487,38 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchHoldings();
   fetchTradeHistory();
 });
+const observer = new MutationObserver(loading);
+observer.observe(tdV, { childList: true, subtree: true, characterData: true });
 
-const tdV = document.getElementById('total-profit-rate');
-function loding () {
-  if (tdV.textContent.trim() !== ""){
-    const loading = document.getElementById("loading");
-    const content = document.getElementById("content");
-    const body = document.body;
-    loading.style.display = "none"; // 로딩 화면 숨김
-    content.style.display = "block"; // 실제 콘텐츠 표시
-    body.style.overflow="";
- }
+const deleteBtn = document.getElementById("deleteProfileButton");
+if (deleteBtn) {
+  deleteBtn.addEventListener("click", function() {
+    if (confirm("정말 탈퇴하시겠습니까?")) {
+      // 페이지에 표시된 이메일을 가져옵니다.
+      const emailElem = document.getElementById("email");
+      const email = emailElem ? emailElem.textContent.trim() : "";
+      
+      // 회원 탈퇴 엔드포인트로 DELETE 요청 전송 (요청 본문에 이메일 포함)
+      fetch("/delete-profile", {
+        method: "POST", // 필요에 따라 POST 등으로 변경 가능
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include", // 쿠키나 인증 정보가 필요하다면 포함
+        body: JSON.stringify({ email: email })
+      })
+      .then(response => {
+        if (response.ok) {
+          alert("회원 탈퇴가 완료되었습니다.");
+          window.location.href = "/"; // 탈퇴 후 리다이렉트할 주소
+        } else {
+          alert("회원 탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
+      })
+      .catch(error => {
+        console.error("회원 탈퇴 요청 중 오류 발생:", error);
+        alert("회원 탈퇴 중 오류가 발생했습니다.");
+      });
+    }
+  });
 }
