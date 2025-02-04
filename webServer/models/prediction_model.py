@@ -101,12 +101,19 @@ def train_and_predict(stock_idx):
         # 100원 단위로 반올림
         next_day_forecast = round(next_day_forecast, -2)
 
-        # 결과 계산
-        current_price = round(np.exp(y_test.iloc[-1]), -2)  # 현재가도 100원 단위 반올림
+        # 결과 계산 (현재가도 100원 단위 반올림)
+        current_price = round(np.exp(y_test.iloc[-1]), -2)
         price_change = next_day_forecast - current_price
-        trend = "상승" if price_change > 0 else "하락"
-        percentage_change = (price_change / current_price) * 100
-        change_summary = f"{price_change:+.0f}원 ({percentage_change:+.2f}%)"
+
+        # 가격 차이가 0원인 경우 부호 없이 "0원 (0.00%)" 처리
+        if price_change == 0:
+            change_summary = "0원 (0.00%)"
+            trend = "보합"
+            percentage_change = 0.0
+        else:
+            trend = "상승" if price_change > 0 else "하락"
+            percentage_change = (price_change / current_price) * 100
+            change_summary = f"{price_change:+.0f}원 ({percentage_change:+.2f}%)"
 
         result = {
             "stock_idx": stock_idx,
@@ -155,10 +162,7 @@ def save_to_db(result):
     except mysql.connector.Error as err:
         print(f"[ERROR] Database save error: {err}")
     finally:
-        # 연결 닫기
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        connection.close()
 
 
 # 메인 함수: 병렬 처리
@@ -170,8 +174,8 @@ def main():
         "034020", "009830", "015760", "011200", "000120"
     ]
 
-    # 멀티프로세싱 풀 생성
-    with multiprocessing.Pool(processes=4) as pool:  # CPU 코어 수에 맞게 조정
+    # 멀티프로세싱 풀 생성 (CPU 코어 수에 맞게 조정)
+    with multiprocessing.Pool(processes=4) as pool:
         results = pool.map(train_and_predict, stock_list)
 
     # 결과 출력
@@ -180,7 +184,6 @@ def main():
             print(f"Stock: {res['stock_idx']}, Current: {res['current_price']:.0f}, "
                   f"Predicted: {res['predicted_price']:.0f}, "
                   f"Trend: {res['trend']}, Change Summary: {res['change_summary']}")
-
 
 if __name__ == "__main__":
     main()

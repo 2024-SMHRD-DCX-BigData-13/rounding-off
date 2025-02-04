@@ -46,6 +46,26 @@ def clean_price(raw_price: str) -> int:
         return 0
 
 # ─────────────────────────────────────────────
+# 장이 열려있는지 여부를 판별하는 함수
+def is_holiday(date):
+    # 현재는 placeholder 함수입니다.
+    # 실제 공휴일 정보를 기반으로 구현하세요.
+    return False
+
+def market_is_open():
+    now = datetime.datetime.now()
+    # 주말 체크 (토요일:5, 일요일:6)
+    if now.weekday() >= 5:
+        return False
+    # 오후 3시 30분 이후라면
+    if now.hour > 15 or (now.hour == 15 and now.minute > 30):
+        return False
+    # 공휴일 체크
+    if is_holiday(now.date()):
+        return False
+    return True
+
+# ─────────────────────────────────────────────
 # Kiwoom API 클래스
 class KiwoomAPI(QAxWidget):
     REAL_SCREEN_NO = "1000"
@@ -100,7 +120,8 @@ class KiwoomAPI(QAxWidget):
         self.request_in_progress = False
         logging.debug("TR 요청 완료; 다음 요청 가능")
 
-    # ── 로그인 및 계좌 관련
+    # ─────────────────────────────────────────────
+    # 로그인 및 계좌 관련
     def login(self):
         logging.debug("로그인 시도 중...")
         self.dynamicCall("CommConnect()")
@@ -117,7 +138,8 @@ class KiwoomAPI(QAxWidget):
             logging.error(f"로그인 실패 - 에러 코드: {err_code}")
         self.login_event_loop.exit()
 
-    # ── TR 요청 메서드 (내부 do_request 함수로 실제 API 호출)
+    # ─────────────────────────────────────────────
+    # TR 요청 메서드 (내부 do_request 함수로 실제 API 호출)
     def request_holdings(self):
         if not self.account_no:
             logging.error("계좌번호가 없습니다.")
@@ -294,7 +316,6 @@ class KiwoomAPI(QAxWidget):
             self.trade_history_data.clear()
             for i in range(cnt):
                 trade = {
-                    # opt10075 사용 시 "체결시간" 항목이 제공됩니다.
                     "date": self.dynamicCall("GetCommData(QString, QString, int, QString)",
                                                trcode, rqname, i, "체결시간").strip(),
                     "stock_name": self.dynamicCall("GetCommData(QString, QString, int, QString)",
@@ -432,6 +453,10 @@ def start_kiwoom_server():
 def periodic_save_real_data(kiwoom_instance, interval=5):
     while not stop_event.is_set():
         time.sleep(interval)
+        # 장이 열려있는지 확인 (오후 3:30 이전, 평일, 공휴일 아님)
+        if not market_is_open():
+            logging.debug("장 시간 외입니다. 실시간 데이터 저장 건너뜀.")
+            continue
         if not kiwoom_instance.real_data:
             logging.debug("실시간 데이터 없음. 저장 건너뜀.")
             continue
@@ -456,7 +481,7 @@ def periodic_save_real_data(kiwoom_instance, interval=5):
 def periodic_save_daily_data(kiwoom_instance):
     while not stop_event.is_set():
         now = datetime.datetime.now()
-        if now.hour == 15 and now.minute == 40:
+        if now.hour == 15 and now.minute == 50:
             logging.info("일봉 데이터 저장 시작")
             kiwoom_instance.fetch_stock_list()
             if not kiwoom_instance.stock_list:
@@ -464,6 +489,24 @@ def periodic_save_daily_data(kiwoom_instance):
             else:
                 kiwoom_instance.start_stock_requests(kiwoom_instance.stock_list)
         time.sleep(60)
+
+# 추가: 시장 개장 여부 판단 함수
+def is_holiday(date):
+    # 여기는 실제 공휴일 정보를 반영하는 로직으로 교체해야 합니다.
+    return False
+
+def market_is_open():
+    now = datetime.datetime.now()
+    # 주말 (토요일=5, 일요일=6)인 경우
+    if now.weekday() >= 5:
+        return False
+    # 오후 3시 30분 이후인 경우
+    if now.hour > 15 or (now.hour == 15 and now.minute > 30):
+        return False
+    # 공휴일인 경우
+    if is_holiday(now.date()):
+        return False
+    return True
 
 # ─────────────────────────────────────────────
 # FastAPI 요청 모델 및 엔드포인트

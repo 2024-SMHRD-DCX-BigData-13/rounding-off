@@ -79,7 +79,7 @@ function updateTradeHistoryUI(trades) {
   const maxVisible = 5;  // 처음에 보여줄 건수
   
   // 최신 거래 내역이 위로 오도록 역순 정렬 후 최대 maxLimit 건 사용
-  const sortedTrades = trades.slice().reverse().slice(0, maxLimit);
+  const sortedTrades = trades.slice().slice(0, maxLimit);
   
   // 각 행을 미리 생성하여 배열에 저장
   const rows = sortedTrades.map(trade => {

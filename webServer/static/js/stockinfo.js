@@ -254,7 +254,7 @@ document.getElementById('mypageButton').addEventListener('click', () => {
   window.location.href = '/mypage';
 });
 
-// 즐겨찾기 기능
+// 관심종목 기능
 document.addEventListener("DOMContentLoaded", () => {
   const favoriteButton = document.getElementById("favoriteButton");
   const params = new URLSearchParams(window.location.search);
@@ -317,12 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
       if (response.ok && data.status === "success") {
         favoriteButton.classList.toggle("active");
-        alert(isActive ? "즐겨찾기에서 삭제되었습니다." : "즐겨찾기에 추가되었습니다.");
+        alert(isActive ? "관심종목에서 삭제되었습니다." : "관심종목에 추가되었습니다.");
       } else {
-        alert(`즐겨찾기 ${isActive ? "삭제" : "추가"} 실패: ${data.message}`);
+        alert(`관심종목 ${isActive ? "삭제" : "추가"} 실패: ${data.message}`);
       }
     } catch (error) {
-      alert(`즐겨찾기 요청 중 오류 발생: ${error.message}`);
+      alert(`관심종목 요청 중 오류 발생: ${error.message}`);
     }
   });
 

@@ -190,7 +190,7 @@ class FavoriteRequest(BaseModel):
     email: str
     stock_id: str
 
-# 즐겨찾기 추가
+# 관심종목 추가
 @router.post("/fav_insert")
 async def add_favorite(fav_request: FavoriteRequest):
     connection = None
@@ -207,11 +207,11 @@ async def add_favorite(fav_request: FavoriteRequest):
         )
         if cursor.fetchone():
             return JSONResponse(
-                content={"status": "error", "message": "이미 즐겨찾기에 추가된 항목입니다."},
+                content={"status": "error", "message": "이미 관심종목에 추가된 항목입니다."},
                 status_code=400,
             )
 
-        # 즐겨찾기 개수 확인
+        # 관심종목 개수 확인
         cursor.execute(
             """
             SELECT COUNT(*) FROM user_favorites WHERE email = %s
@@ -221,11 +221,11 @@ async def add_favorite(fav_request: FavoriteRequest):
         favorite_count = cursor.fetchone()[0]
         if favorite_count >= 5:
             return JSONResponse(
-                content={"status": "error", "message": "즐겨찾기는 최대 5개까지 추가할 수 있습니다."},
+                content={"status": "error", "message": "관심종목는 최대 5개까지 추가할 수 있습니다."},
                 status_code=400,
             )
 
-        # 즐겨찾기 추가
+        # 관심종목 추가
         cursor.execute(
             """
             INSERT INTO user_favorites (email, stock_idx)
@@ -235,7 +235,7 @@ async def add_favorite(fav_request: FavoriteRequest):
         )
         connection.commit()
         return JSONResponse(
-            content={"status": "success", "message": "즐겨찾기 추가 성공"}, status_code=200
+            content={"status": "success", "message": "관심종목 추가 성공"}, status_code=200
         )
 
     except mysql.connector.Error as err:
@@ -257,7 +257,7 @@ async def remove_favorite(fav_request: FavoriteRequest):
         connection = create_connection()
         cursor = connection.cursor()
 
-        # 즐겨찾기 삭제
+        # 관심종목 삭제
         cursor.execute(
             """
             DELETE FROM user_favorites WHERE email = %s AND stock_idx = %s
@@ -268,12 +268,12 @@ async def remove_favorite(fav_request: FavoriteRequest):
 
         if cursor.rowcount == 0:
             return JSONResponse(
-                content={"status": "error", "message": "즐겨찾기에 해당 항목이 없습니다."},
+                content={"status": "error", "message": "관심종목에 해당 항목이 없습니다."},
                 status_code=400,
             )
 
         return JSONResponse(
-            content={"status": "success", "message": "즐겨찾기 삭제 성공"}, status_code=200
+            content={"status": "success", "message": "관심종목 삭제 성공"}, status_code=200
         )
 
     except mysql.connector.Error as err:
@@ -296,7 +296,7 @@ async def check_favorite(request: FavoriteRequest):
         connection = create_connection()
         cursor = connection.cursor()
 
-        # 즐겨찾기 확인 쿼리
+        # 관심종목 확인 쿼리
         query = """
         SELECT COUNT(*)
         FROM user_favorites

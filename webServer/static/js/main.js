@@ -1,4 +1,3 @@
-
 document.getElementById('loginButton').addEventListener('click', () => {
   window.location.href = '/login'; // 로그인 페이지 URL
 });
@@ -14,7 +13,6 @@ document.getElementById('logoutButton').addEventListener('click', () => {
     })
     .catch((error) => console.error('Error:', error));
 });
-
 
 document.querySelector('.text-bg-primary').style.backgroundColor = '#FF69B4';
 
@@ -56,24 +54,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return stocks.sort((a, b) => {
           const getPercentage = (text) => {
             const match = text.match(/([-+]?\d+(\.\d+)?)%/); // %를 포함한 값 추출
-            return match ? parseFloat(match[1]) : 0; // 소수점 숫자로 변환
+            return match ? parseFloat(match[1]) : 0;
           };
           return getPercentage(b["예측(다음날)"]) - getPercentage(a["예측(다음날)"]);
         });
       } else if (currentSort === "volume") {
         return stocks.sort((a, b) => {
           const getVolume = (text) => {
-            // 쉼표 제거 후 숫자로 변환
-            const sanitizedText = text.replace(/,/g, "").trim(); // 쉼표와 공백 제거
-            return parseInt(sanitizedText, 10) || 0; // 숫자로 변환
+            const sanitizedText = text.replace(/,/g, "").trim();
+            return parseInt(sanitizedText, 10) || 0;
           };
           return getVolume(b["거래량"]) - getVolume(a["거래량"]);
         });
       } else if (currentSort === "value") {
         return stocks.sort((a, b) => {
           const getPrice = (text) => {
-            const sanitizedText = text.replace(/,/g, "").trim(); // 쉼표와 공백 제거
-            return parseInt(sanitizedText, 10) || 0; // 숫자로 변환
+            const sanitizedText = text.replace(/,/g, "").trim();
+            return parseInt(sanitizedText, 10) || 0;
           };
           return getPrice(b["현재가"]) - getPrice(a["현재가"]);
         });
@@ -83,8 +80,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
     // 테이블 렌더링
     function renderStocksTable(page) {
-      tableBody.innerHTML = ""; // 기존 데이터 초기화
-    
+      tableBody.innerHTML = "";
       const startIndex = (page - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const stocksToDisplay = allStocks.slice(startIndex, endIndex);
@@ -97,22 +93,38 @@ document.addEventListener("DOMContentLoaded", function () {
     
         // 예측값 포맷 수정
         let prediction = stock["예측(다음날)"];
-        const predictionClass = prediction.includes("+") ? "positive" : "negative";
-    
-        // 숫자 부분과 % 부분 분리 및 소수점 제거
-        prediction = prediction.replace(/([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/, (match, value, percent) => {
-          return `${parseInt(value, 10)}원 (${percent})`;
-        });
+        // 숫자 부분 추출 (예: "+0.00 (0.00%)" -> 0)
+        let rawMatch = prediction.match(/([-+]?\d+(\.\d+)?)/);
+        let predictionNumber = rawMatch ? parseFloat(rawMatch[0]) : 0;
+        let predictionClass = "";
+        let formattedPrediction = "";
+        if (Math.abs(predictionNumber) < 1e-6) {
+          predictionClass = "neutral";
+          formattedPrediction = "0원 (0.00%)";
+        } else if (predictionNumber > 0) {
+          predictionClass = "positive";
+          formattedPrediction = prediction.replace(/([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/, (match, value, percent) => {
+            return `${parseInt(value, 10)}원 (${percent})`;
+          });
+        } else {
+          predictionClass = "negative";
+          formattedPrediction = prediction.replace(/([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/, (match, value, percent) => {
+            return `${parseInt(value, 10)}원 (${percent})`;
+          });
+        }
     
         row.innerHTML = `
           <td style="text-align: center; vertical-align: middle; width: 10%;">${startIndex + index + 1}</td>
-          <td style="text-align: center; vertical-align: middle; width: 30%;"><div class="logoN"><img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}</div></td>
+          <td style="text-align: center; vertical-align: middle; width: 30%;">
+            <div class="logoN">
+              <img class="stocklogo" alt="Stock Logo" src="${stockLogo(stock["종목명"])}">${stock["종목명"]}
+            </div>
+          </td>
           <td style="text-align: center; vertical-align: middle; width: 15%;">${stock["현재가"]}</td>
           <td style="text-align: center; vertical-align: middle; width: 20%;">${stock["거래량"]}</td>
-          <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${prediction}</td>
+          <td style="text-align: center; vertical-align: middle; width: 25%;" class="${predictionClass}">${formattedPrediction}</td>
         `;
     
-        // 클릭 이벤트 추가
         row.addEventListener("click", function () {
           const id = stock["종목코드"];
           const encodedId = encodeURIComponent(id);
@@ -152,7 +164,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
   
-    // 탭 클릭 이벤트 처리
     recommendTab.addEventListener("click", function () {
       currentSort = "prediction";
       allStocks = sortStocks(allStocks);
@@ -180,7 +191,6 @@ document.addEventListener("DOMContentLoaded", function () {
       updateActivePage(1);
     });
   
-    // 페이지네이션 클릭 이벤트 처리
     pagination.addEventListener("click", (event) => {
       const target = event.target;
       if (target.tagName === "A" && target.dataset.page) {
@@ -189,30 +199,27 @@ document.addEventListener("DOMContentLoaded", function () {
         if (page !== currentPage) {
           currentPage = page;
           renderStocksTable(page);
-          updateActivePage(page); // 활성화 페이지 업데이트
+          updateActivePage(page);
         }
       }
     });
   
-    // 초기 데이터 로드 및 5초마다 갱신
     fetchStocksData().then((data) => {
       allStocks = sortStocks(data);
       renderStocksTable(currentPage);
-      updateActiveTab(recommendTab); // 기본적으로 추천 탭 활성화
-      updateActivePage(1); // 초기 활성화 페이지 설정
-      setInterval(refreshStocksData, 5000); // 5초마다 데이터 갱신
+      updateActiveTab(recommendTab);
+      updateActivePage(1);
+      setInterval(refreshStocksData, 5000);
     });
   });
   
   document.addEventListener('DOMContentLoaded', () => {
-    let isFetchingFavorites = false; // 중복 요청 방지 플래그
+    let isFetchingFavorites = false;
   
-    // 서버에서 로그인 상태 확인
     fetch('/api/check-login')
       .then((response) => response.json())
       .then(async (data) => {
         if (data.isLoggedIn) {
-          // 로그인 상태일 때 관심종목 섹션 표시
           document.getElementById('favorites').style.display = 'block';
           document.getElementById('loginButton').style.display = 'none';
           document.getElementById('logoutButton').style.display = 'block';
@@ -220,18 +227,14 @@ document.addEventListener("DOMContentLoaded", function () {
           document.getElementById('image-content').style.display = 'none';
           document.getElementById('opentext').style.display = 'none';
   
-          // 이메일을 기반으로 관심종목 가져오기
           const email = data.user.email;
           await fetchFavorites(email);
-  
-          // 5초마다 관심종목 데이터 갱신
           setInterval(() => fetchFavorites(email), 5000);
         }
       })
       .catch((error) => console.error('Error:', error));
   
     async function fetchFavorites(email) {
-      // 중복 요청 방지
       if (isFetchingFavorites) return;
       isFetchingFavorites = true;
   
@@ -259,41 +262,56 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (error) {
         console.error('Error fetching favorites:', error.message);
       } finally {
-        isFetchingFavorites = false; // 요청 완료 후 플래그 초기화
+        isFetchingFavorites = false;
       }
     }
   
     function renderFavorites(favorites, container) {
-      container.innerHTML = ''; // 기존 데이터 초기화
+      container.innerHTML = '';
   
-      // 중복 제거: Set을 사용해 고유한 stock_idx만 남김
       const seen = new Set();
       const uniqueFavorites = favorites.filter((favorite) => {
         if (seen.has(favorite.stock_idx)) {
-          return false; // 중복된 항목은 필터링
+          return false;
         }
         seen.add(favorite.stock_idx);
-        return true; // 고유한 항목만 반환
+        return true;
       });
   
       uniqueFavorites.forEach((favorite) => {
         const card = document.createElement('div');
         card.className = 'card';
   
-        // 숫자 형식 지정 (쉼표 추가)
         const formattedPrice = new Intl.NumberFormat('ko-KR').format(favorite.current_price);
   
-        // 예측값 포맷 수정: 소수점을 제거하고 "원" 추가
-        let formattedPrediction = favorite.prediction.replace(
-          /([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/,
-          (match, value, percent) => {
-            return `${parseInt(value, 10)}원 (${percent})`;
-          }
-        );
+        // 예측값 처리
+        let rawPredictionMatch = favorite.prediction.match(/([-+]?\d+(\.\d+)?)/);
+        let predictionNumber = rawPredictionMatch ? parseFloat(rawPredictionMatch[0]) : 0;
+        let predictionClass = "";
+        let formattedPrediction = "";
+        if (Math.abs(predictionNumber) < 1e-6) {
+          predictionClass = "neutral";
+          formattedPrediction = "0원 (0.00%)";
+        } else if (predictionNumber > 0) {
+          predictionClass = "positive";
+          formattedPrediction = favorite.prediction.replace(
+            /([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/,
+            (match, value, percent) => {
+              return `${parseInt(value, 10)}원 (${percent})`;
+            }
+          );
+        } else {
+          predictionClass = "negative";
+          formattedPrediction = favorite.prediction.replace(
+            /([-+]?\d+)\.\d+\s*\(([-+]?\d+\.\d+%)\)/,
+            (match, value, percent) => {
+              return `${parseInt(value, 10)}원 (${percent})`;
+            }
+          );
+        }
   
-        // 클릭 이벤트를 추가하여 stockinfo 페이지로 이동
         card.addEventListener('click', () => {
-          const encodedId = encodeURIComponent(favorite.stock_idx); // ID 인코딩
+          const encodedId = encodeURIComponent(favorite.stock_idx);
           window.location.href = `stockinfo?id=${encodedId}`;
         });
   
@@ -305,35 +323,29 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
           </div>
           <p class="value">${formattedPrice}원</p>
-          <p class="change ${formattedPrediction.includes('+') ? 'positive' : 'negative'}">
+          <p class="change ${predictionClass}">
             ${formattedPrediction}
           </p>
         `;
         container.appendChild(card);
       });
-    }
+    }    
   });
   
-
  // 로딩창 
-
  const tdV = document.getElementById('stocks-table-body');
  function loding () {
    if (tdV.textContent.trim() !== ""){
      const loading = document.getElementById("loading");
      const content = document.getElementById("content");
-     loading.style.display = "none"; // 로딩 화면 숨김
-     content.style.display = "block"; // 실제 콘텐츠 표시
-     
-  }
-}
-const observer = new MutationObserver(loding);
-observer.observe(tdV, { childList: true, subtree: true, characterData: true});
-
-
-
+     loading.style.display = "none";
+     content.style.display = "block";
+   }
+ }
+ const observer = new MutationObserver(loding);
+ observer.observe(tdV, { childList: true, subtree: true, characterData: true});
  
-function stockLogo (stockName){
+ function stockLogo (stockName){
   const logoMapping = {
     "삼성전자": "logo1.png",
     "삼성SDI": "logo1.png",
@@ -358,6 +370,5 @@ function stockLogo (stockName){
   };
   const path = "../static/img/"
   const logoC = logoMapping[stockName] || 'red.png';
-  const plus = path + logoC;
-  return plus;
+  return path + logoC;
 }

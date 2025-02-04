@@ -323,6 +323,11 @@ ul.nav.nav-underline .nav-link.disabled {
   color: rgb(83, 83, 204) !important;
   font-weight: bold;
 }
+
+.neutral {
+  color: rgb(139, 139, 139)!important;
+  font-weight: bold;
+}
 /* ===================== 페이지네이션 컨테이너 ===================== */
 .pagination {
   display: flex;
