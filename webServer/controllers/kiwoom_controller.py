@@ -94,9 +94,7 @@ async def get_trade_history():
 
 @router.get("/account/info")
 async def get_account_info():
-    """
-    ✅ 서브 서버에 계좌 정보 및 미체결 내역 요청
-    """
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{SUB_SERVER_URL}/account/info")
@@ -105,7 +103,7 @@ async def get_account_info():
             print(f"[ERROR] Failed to fetch account info, status code: {response.status_code}")
             raise HTTPException(status_code=response.status_code, detail="서브 서버 요청 실패")
 
-        account_data = response.json()  # ✅ JSON 변환
+        account_data = response.json()  # JSON 변환
         print("[INFO] Account & Pending Orders received from sub-server:", account_data)
 
         return {
@@ -118,5 +116,3 @@ async def get_account_info():
         print(f"[ERROR] 서브 서버 통신 오류: {e}")
         raise HTTPException(status_code=500, detail=f"서브 서버와의 통신 오류: {e}")
 
-class CancelOrderRequest(BaseModel):
-    order_number: str  # ✅ 반드시 문자열로 처리

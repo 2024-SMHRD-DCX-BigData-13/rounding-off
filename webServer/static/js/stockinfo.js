@@ -1,3 +1,4 @@
+let chartStarted = false;
 // 높이 동기화 함수 및 ResizeObserver
 function syncHeights() {
   const form = document.querySelector('form.custom-section');
@@ -82,10 +83,10 @@ function filterFiveMinuteData(timestamps, prices) {
   return { timestamps: filteredTimestamps, prices: filteredPrices };
 }
 
-// 차트 데이터를 업데이트하는 함수
 function updateChart(newData) {
   console.log("Updating Chart with:", newData.timestamps, newData.prices);
   const filteredData = filterTodayAndYesterdayData(newData.timestamps, newData.prices);
+
   if (isFirstRequest) {
     const fiveMinuteData = filterFiveMinuteData(filteredData.timestamps, filteredData.prices);
     chartData.timestamps = fiveMinuteData.timestamps;
@@ -94,12 +95,15 @@ function updateChart(newData) {
     chartData.timestamps.push(...filteredData.timestamps);
     chartData.prices.push(...filteredData.prices);
   }
+
   const maxPrice = Math.max(...chartData.prices);
   const minPrice = Math.min(...chartData.prices);
   const yMin = Math.max(0, minPrice - 2000);
   const yMax = maxPrice + 2000;
+
   if (!myChart) {
     console.log("Initializing Chart...");
+  
     myChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -112,25 +116,85 @@ function updateChart(newData) {
         }]
       },
       options: {
+        animation: false, // 기본 애니메이션 off
         plugins: {
           legend: { display: false }
         },
         scales: {
           x: {
-            title: { display: true, text: 'Time' },
+            title: { display: true, text: '시간' },
             ticks: {
-              callback: function (value, index, values) {
+              autoSkip: false,       // 자동 생략 끄기
+              maxRotation: 0,        // 레이블 회전 0° (수평)
+              minRotation: 0,        // 레이블 회전 0° (수평)
+              callback: function(value, index, ticks) {
                 const timestamp = this.getLabelForValue(value);
                 const date = new Date(timestamp);
-                return date.getMinutes() === 0 ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              },
-              autoSkip: true
+                // 24시간 형식으로 표시 (hour12: false)
+                const formattedTime = date.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                });
+                if (index === 0) {
+                  return formattedTime;
+                }
+                const prevTimestamp = this.getLabelForValue(ticks[index - 1].value);
+                const prevDate = new Date(prevTimestamp);
+                if (date.getHours() !== prevDate.getHours()) {
+                  return formattedTime;
+                }
+                return '';
+              }
             }
           },
-          y: { title: { display: true, text: 'Price' }, min: yMin, max: yMax }
+          y: {
+            title: { display: true, text: '가격' },
+            min: yMin,
+            max: yMax
+          }
         }
       }
     });
+  
+    // 차트 레이아웃(차트 영역)이 준비되도록 업데이트
+    myChart.update();
+  
+    // requestAnimationFrame을 이용한 클리핑 애니메이션 (좌측부터 선이 점차 나타나는 효과)
+    let startTime = null;
+    const duration = 2000; // 애니메이션 시간: 2000ms
+  
+    function animate(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1); // 0 ~ 1 사이
+  
+      const chartArea = myChart.chartArea;
+      if (!chartArea) {
+        requestAnimationFrame(animate);
+        return;
+      }
+  
+      // 캔버스 클리어 후 클리핑 영역 적용하여 그리기
+      myChart.clear();
+      const ctxLocal = myChart.ctx;
+      ctxLocal.save();
+      ctxLocal.beginPath();
+      ctxLocal.rect(chartArea.left, chartArea.top, chartArea.width * progress, chartArea.height);
+      ctxLocal.clip();
+      myChart.draw();
+      ctxLocal.restore();
+  
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // 애니메이션 완료 후 최종 프레임 다시 그림 (클리핑 효과 제거)
+        myChart.clear();
+        myChart.draw();
+      }
+    }
+    requestAnimationFrame(animate);
+  
   } else {
     console.log("Updating Existing Chart...");
     myChart.data.labels = chartData.timestamps;
@@ -139,6 +203,7 @@ function updateChart(newData) {
     myChart.options.scales.y.max = yMax;
     myChart.update();
   }
+  
 }
 
 // 서버에서 데이터를 가져오는 함수 (차트 업데이트용)
@@ -167,9 +232,8 @@ async function fetchStockDataForChart() {
     console.error('Error fetching stock data:', error);
   }
 }
-const fetchInterval = setInterval(fetchStockDataForChart, 300000);
-fetchStockDataForChart();
-
+// 차트 데이터 갱신 주기 (예: 300000ms = 5분)
+let fetchInterval;
 
 // 주문 기능: 총 주문 금액 계산 및 현재가 인풋은 최초 한 번만 설정
 document.addEventListener("DOMContentLoaded", async () => {
@@ -383,6 +447,13 @@ function loding() {
     const content = document.getElementById("content");
     loading.style.display = "none";
     content.style.display = "block";
+
+    // 로딩이 완료된 후 차트 작업을 시작 (한 번만 실행)
+    if (!chartStarted) {
+      fetchStockDataForChart(); // 최초 데이터 요청
+      fetchInterval = setInterval(fetchStockDataForChart, 300000);
+      chartStarted = true;
+    }
   }
 }
 const observer = new MutationObserver(loding);
