@@ -496,3 +496,7 @@ input:focus {
 #profile-title{
   margin-bottom: 70px;
 }
+
+.trade_price {
+  color: rgb(255, 255, 255) !important ;
+}

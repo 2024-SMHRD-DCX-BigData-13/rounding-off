@@ -97,8 +97,8 @@ function updateTradeHistoryUI(trades) {
           ${trade.stock_name}
         </div>
       </td>
-      <td>${trade.price !== "N/A" ? Number(trade.price).toLocaleString() + "원" : "-"}</td>
-      <td>${trade.quantity !== "N/A" ? Number(trade.quantity).toLocaleString() + "주" : "-"}</td>
+      <td class="trade_price">${trade.price !== "0" ? Number(trade.price).toLocaleString() + "원" : "-"}</td>
+      <td>${trade.quantity !== "0" ? Number(trade.quantity).toLocaleString() + "주" : "-"}</td>
       <td>${trade.type === "현금매수" ? "매수" : "매도"}</td>
     `;
     return row;
@@ -154,6 +154,17 @@ function updateAccountUI(account, totalProfitRate) {
     (totalProfitRate !== null && totalProfitRate !== undefined)
       ? totalProfitRate.toFixed(2) + "%"
       : "-";
+      const profitRateText = profitRateElem.textContent; // 또는 innerText 사용
+      const profitNumber = parseFloat(profitRateText.replace(/[^0-9.-]/g, ""));
+      // 기존 클래스를 먼저 모두 제거 (원하는 경우)
+      profitRateElem.classList.remove("positive-profit", "negative-profit");
+      
+      if (profitNumber < 0) {
+        profitRateElem.classList.add("negative-profit");
+      } else if (profitNumber > 0) {
+        profitRateElem.classList.add("positive-profit");
+      }
+
 }
 
 // [3] 미체결 내역 UI 업데이트
@@ -248,11 +259,29 @@ function updateHoldingsTable(stocks) {
   window.holdingsData = stocks;
 }
 
-// 차트 업데이트 함수 (변경 없음)
 function updateHoldingsChart(stocks) {
-  const labels = stocks.map(stock => stock.stock_name);
-  const values = stocks.map(stock => stock.current_price * stock.quantity);
-  const backgroundColors = generateRandomColors(stocks.length);
+  // 그룹화를 위한 객체 생성: 종목명별 누적 값 계산
+  const aggregated = {};
+  stocks.forEach(stock => {
+    const name = stock.stock_name;
+    // current_price와 quantity가 숫자여야 함. (만약 문자열이면 parseFloat 등을 사용)
+    const value = Number(stock.current_price) * Number(stock.quantity);
+    if (aggregated[name]) {
+      aggregated[name] += value;
+    } else {
+      aggregated[name] = value;
+    }
+  });
+
+  // 고유 종목명과 누적값 배열 생성
+  const labels = Object.keys(aggregated);
+  const values = Object.values(aggregated);
+
+  // 고정된 보라색 계열 색상 배열 (필요에 따라 추가)
+  const Colors = ['#8E44AD', '#3498DB', '#E74C3C', '#27AE60', '#F1C40F', '#9B59B6', '#34495E', '#16A085', '#D35400', '#2ECC71'];
+  // 항목 수에 맞게 색상을 순환 사용
+  const backgroundColors = labels.map((_, idx) => Colors[idx % Colors.length]);
+
   const canvas = document.getElementById("accountPieChart");
   if (!canvas) {
     console.error("Chart canvas element with id 'accountPieChart' not found.");
@@ -263,36 +292,50 @@ function updateHoldingsChart(stocks) {
     console.error("2D context could not be obtained from the canvas.");
     return;
   }
-  if (window.myPieChart) {
-    window.myPieChart.destroy();
-  }
-  window.myPieChart = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "종목별 비중",
-        data: values,
-        backgroundColor: backgroundColors,
-        borderColor: "#ffffff",
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-          labels: {
-            color: "#cfcfcf",
-            font: { size: 14 }
+
+  // 최초 생성 시 (window.myPieChart가 없을 경우)에는 애니메이션 포함
+  if (!window.myPieChart) {
+    window.myPieChart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "종목별 비중",
+          data: values,
+          backgroundColor: backgroundColors,
+          borderColor: "#ffffff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: {
+          duration: 1000 // 초기 생성 시 1초 애니메이션
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              color: "#cfcfcf",
+              font: { size: 14 }
+            }
           }
         }
       }
-    }
-  });
-  console.log("차트가 생성되었습니다.");
+    });
+    console.log("차트가 생성되었습니다.");
+  } else {
+    // 업데이트 시 애니메이션 없이 값만 반영
+    window.myPieChart.data.labels = labels;
+    window.myPieChart.data.datasets[0].data = values;
+    window.myPieChart.data.datasets[0].backgroundColor = backgroundColors;
+    window.myPieChart.options.animation.duration = 0; // 업데이트 시 애니메이션 없음
+    window.myPieChart.update();
+    console.log("차트가 업데이트되었습니다.");
+  }
 }
+
+
 
 /* ===============================
    Fetch Functions (API Calls)
@@ -322,7 +365,8 @@ async function fetchHoldings() {
       const stocks = data.data;
       updateHoldingsTable(stocks);
       console.log("보유 종목 데이터 로드 완료");
-      // updateHoldingsChart()는 로딩 완료 시 호출됩니다.
+      // 필요시 차트 업데이트 함수도 호출합니다.
+      // updateHoldingsChart(stocks);
     } else {
       console.error("보유 종목 데이터 로드 실패:", data.detail);
     }
@@ -330,6 +374,15 @@ async function fetchHoldings() {
     console.error("보유 종목 데이터 요청 오류:", error);
   }
 }
+
+// DOMContentLoaded 이후 5초마다 fetchHoldings()를 호출
+document.addEventListener("DOMContentLoaded", () => {
+  // 최초 호출
+  fetchHoldings();
+  // 5초(5000ms)마다 호출
+  setInterval(fetchHoldings, 5000);
+});
+
 
 async function fetchTradeHistory() {
   try {
