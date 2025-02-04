@@ -81,7 +81,7 @@ async def get_trade_history():
     클라이언트 → 메인 서버 요청 → 서브 서버 요청 → 응답 반환
     """
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=None) as client:
             response = await client.get(f"{SUB_SERVER_URL}/account/trade-history")
         
         if response.status_code == 200:

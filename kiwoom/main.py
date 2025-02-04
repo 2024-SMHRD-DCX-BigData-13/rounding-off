@@ -13,6 +13,16 @@ from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtCore import QEventLoop, QTimer
 from PyQt5.QtWidgets import QApplication
 
+def safe_int(raw_value, default=0):
+    try:
+        value = raw_value.strip()
+        if value == "":
+            return default
+        return int(value)
+    except Exception:
+        return default
+
+
 # ─────────────────────────────────────────────
 # 로깅 설정
 logging.basicConfig(
@@ -104,7 +114,7 @@ class KiwoomAPI(QAxWidget):
         self.api_queue_timer.start(100)  # 100ms 간격으로 큐 확인
 
     def process_api_queue(self):
-        """큐에 대기 중인 요청이 있고 현재 요청 진행 중이 아니면 하나 실행"""
+        # 큐에 대기 중인 요청이 있고 현재 요청 진행 중이 아니면 하나 실행
         if not self.request_in_progress and not api_request_queue.empty():
             req_func = api_request_queue.get()
             self.request_in_progress = True
@@ -112,11 +122,11 @@ class KiwoomAPI(QAxWidget):
             req_func()
 
     def schedule_request(self, req_callable):
-        """TR 요청을 큐에 등록"""
+        # TR 요청을 큐에 등록
         api_request_queue.put(req_callable)
 
     def _mark_request_complete(self):
-        """TR 요청이 완료되었음을 표시하여 다음 요청을 실행할 수 있도록 함"""
+        # TR 요청이 완료되었음을 표시하여 다음 요청을 실행할 수 있도록 함
         self.request_in_progress = False
         logging.debug("TR 요청 완료; 다음 요청 가능")
 
@@ -151,29 +161,45 @@ class KiwoomAPI(QAxWidget):
         def do_request():
             self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
             self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
-            self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "1")
+            self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "4")
+            self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "4")
             self.dynamicCall("CommRqData(QString, QString, int, QString)",
                              "계좌평가잔고내역조회", "opw00018", 0, "9001")
         self.schedule_request(do_request)
 
     def request_trade_history(self):
-        if not self.account_no:
-            logging.error("계좌번호가 없습니다.")
-            return
+        # 기존 데이터 초기화 (누적)
+        self.trade_history_data.clear()
+        # 최근 7일(오늘 포함)의 주문일자를 생성 (예: 오늘, 어제, ...)
+        for i in range(7):
+            order_date = (datetime.datetime.now() - datetime.timedelta(days=i)).strftime("%Y%m%d")
+            logging.debug(f"OPW00007 요청 - 주문일자: {order_date}")
 
-        logging.debug("거래 내역 조회 요청 준비 중...")
-        self.trade_history_data.clear()  # 기존 데이터 초기화
+            self.last_requested_date = order_date
+            
+            def do_request(date=order_date):
+                self.dynamicCall("SetInputValue(QString, QString)", "주문일자", date)
+                self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
+                self.dynamicCall("SetInputValue(QString, QString)", "비밀번호", "0000")
+                self.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+                self.dynamicCall("SetInputValue(QString, QString)", "조회구분", "4")       # 체결내역만
+                self.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "1")    # 주식
+                self.dynamicCall("SetInputValue(QString, QString)", "매도수구분", "0")        # 전체 (매도/매수 모두)
+                result = self.dynamicCall("CommRqData(QString, QString, int, QString)",
+                                          "계좌별주문체결내역상세요청", "opw00007", 0, "9002")
+                logging.debug(f"OPW00007 요청 결과 (주문일자 {date}): {result}")
+                if result != 0:
+                    logging.error(f"OPW00007 요청 실패 (주문일자 {date}, 에러 코드: {result})")
+            self.schedule_request(do_request)
+            
+            # 각 날짜별 응답을 대기 (최대 5초)
+            start_wait = time.time()
+            while not trade_history_response_event.is_set() and time.time() - start_wait < 5:
+                time.sleep(0.5)
+            # 응답 대기가 끝나면 이벤트 플래그 초기화하고 다음 날짜 요청 진행
+            trade_history_response_event.clear()
+        trade_history_response_event.set()
 
-        def do_request():
-            self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_no)
-            self.dynamicCall("SetInputValue(QString, QString)", "체결구분", "2")
-            # TR 코드 opt10075를 사용하여 체결 내역 조회 (체결시간 등만 제공)
-            result = self.dynamicCall("CommRqData(QString, QString, int, QString)",
-                                        "체결내역조회", "opt10075", 0, "9002")
-            logging.debug(f"체결내역조회 요청 결과: {result}")
-            if result != 0:
-                logging.error(f"거래 내역 요청 실패 (에러 코드: {result})")
-        self.schedule_request(do_request)
 
     def request_account_info(self):
         if not self.account_no:
@@ -276,6 +302,7 @@ class KiwoomAPI(QAxWidget):
 
     def _on_receive_trdata(self, screen_no, rqname, trcode, record_name, prev_next, data_len, err_code, msg, sRQName):
         if rqname == "주식일봉차트조회":
+            # 기존 일봉 데이터 처리 코드 (생략)
             cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
             for i in range(cnt):
                 record = {
@@ -292,6 +319,7 @@ class KiwoomAPI(QAxWidget):
             self._mark_request_complete()
 
         elif rqname == "계좌평가잔고내역조회":
+            # 기존 보유 종목 처리 코드 (생략)
             cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
             for i in range(cnt):
                 holding = {
@@ -306,33 +334,33 @@ class KiwoomAPI(QAxWidget):
             holdings_response_event.set()
             self._mark_request_complete()
 
-        elif rqname == "체결내역조회":
+        elif rqname == "계좌별주문체결내역상세요청":
             cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-            if cnt == 0:
-                logging.warning("거래 내역 데이터가 없습니다.")
-                self._mark_request_complete()
-                return
-
-            self.trade_history_data.clear()
+            logging.debug(f"계좌별주문체결내역상세요청 응답 건수: {cnt}")
             for i in range(cnt):
-                trade = {
-                    "date": self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                               trcode, rqname, i, "체결시간").strip(),
-                    "stock_name": self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                                   trcode, rqname, i, "종목명").strip(),
-                    "price": int(self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                                  trcode, rqname, i, "체결가").strip()),
-                    "quantity": int(self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                                     trcode, rqname, i, "체결량").strip()),
-                    "type": self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                             trcode, rqname, i, "주문구분").strip()
-                }
+                try:
+                    trade = {
+                        "order_date": self.last_requested_date,
+                        "stock_name": self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "종목명").strip(),
+                        "price": safe_int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결단가")),
+                        "quantity": safe_int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "체결수량")),
+                        "type": self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, i, "주문구분").strip()
+                    }
+                except Exception as e:
+                    logging.error(f"계좌별주문체결내역상세요청 데이터 파싱 에러: {e}")
+                    continue
                 self.trade_history_data.append(trade)
-            logging.debug(f"거래 내역 데이터: {self.trade_history_data}")
-            trade_history_response_event.set()
+            logging.debug(f"조회된 체결내역 데이터 건수: {len(self.trade_history_data)}")
+            logging.debug(f"조회된 체결내역 데이터: {self.trade_history_data}")
+            if prev_next == "2":
+                logging.debug("추가 데이터가 있습니다. 다음 페이지 요청 중...")
+                self.request_trade_history(prev_next="2")
+            else:
+                trade_history_response_event.set()
             self._mark_request_complete()
 
         elif rqname == "예수금상세현황":
+            # 기존 계좌 정보 처리 코드 (생략)
             예수금 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "예수금").strip())
             출금가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "출금가능금액").strip())
             주문가능금액 = int(self.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, rqname, 0, "주문가능금액").strip())
@@ -347,6 +375,7 @@ class KiwoomAPI(QAxWidget):
             self._mark_request_complete()
 
         elif rqname == "미체결내역조회":
+            # 기존 미체결 내역 처리 코드 (생략)
             cnt = self.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
             for i in range(cnt):
                 order = {
@@ -360,6 +389,7 @@ class KiwoomAPI(QAxWidget):
                 self.pending_orders_data.append(order)
             pending_orders_response_event.set()
             self._mark_request_complete()
+
 
     def save_to_db(self):
         if not self.current_stock:
@@ -558,7 +588,7 @@ async def get_trade_history():
     trade_history_response_event.clear()
     kiwoom.request_trade_history()
     try:
-        await asyncio.wait_for(trade_history_response_event.wait(), timeout=5)
+        await asyncio.wait_for(trade_history_response_event.wait(), timeout=10)
     except asyncio.TimeoutError:
         raise HTTPException(status_code=408, detail="거래 내역 조회 시간 초과")
     return JSONResponse(content={"status": "success", "data": kiwoom.trade_history_data})

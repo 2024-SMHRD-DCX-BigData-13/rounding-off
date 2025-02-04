@@ -80,12 +80,17 @@ function updateTradeHistoryUI(trades) {
   
   // 최신 거래 내역이 위로 오도록 역순 정렬 후 최대 maxLimit 건 사용
   const sortedTrades = trades.slice().slice(0, maxLimit);
+
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr.length !== 8) return "-";
+    return `${dateStr.slice(0,4)}/${dateStr.slice(4,6)}/${dateStr.slice(6,8)}`;
+  }
   
   // 각 행을 미리 생성하여 배열에 저장
   const rows = sortedTrades.map(trade => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${trade.date !== "N/A" ? trade.date : "-"}</td>
+      <td>${trade.order_date !== "" ? formatDate(trade.order_date) : "-"}</td>
       <td style="text-align: center; vertical-align: middle; width: 25%;">
         <div class="logomm">
           <img class="choicelogo" src="${stockLogo(trade.stock_name)}" alt="${trade.stock_name} Logo">
@@ -94,7 +99,7 @@ function updateTradeHistoryUI(trades) {
       </td>
       <td>${trade.price !== "N/A" ? Number(trade.price).toLocaleString() + "원" : "-"}</td>
       <td>${trade.quantity !== "N/A" ? Number(trade.quantity).toLocaleString() + "주" : "-"}</td>
-      <td>${trade.type === "+매수" ? "매수" : "매도"}</td>
+      <td>${trade.type === "현금매수" ? "매수" : "매도"}</td>
     `;
     return row;
   });
