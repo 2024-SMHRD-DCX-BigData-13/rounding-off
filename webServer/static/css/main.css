@@ -705,3 +705,8 @@ tbody tr:last-child{
   #top-recommend,#top-volume,#top-value,.card{
     cursor: pointer;
   }
+
+#winter {
+  text-decoration: none;
+  color:white;
+}
