@@ -1,4 +1,9 @@
 let chartStarted = false;
+let loadingFinished = false; // 로딩 완료 여부 (초기 false)
+let myChart;
+let chartData = { timestamps: [], prices: [] }; // 데이터를 저장할 객체
+let isFirstRequest = true; // 첫 요청 여부 플래그
+let lastTimestamp = null; // 마지막 타임스탬프 저장
 // 높이 동기화 함수 및 ResizeObserver
 function syncHeights() {
   const form = document.querySelector('form.custom-section');
@@ -30,12 +35,6 @@ const stockId = params.get("id");
 
 // 차트를 렌더링할 canvas 요소의 2D 컨텍스트를 가져옵니다.
 const ctx = document.getElementById('stockChart').getContext('2d');
-
-// Chart.js 차트 초기화 변수 및 데이터 저장소
-let myChart;
-let chartData = { timestamps: [], prices: [] }; // 기존 데이터를 저장
-let isFirstRequest = true; // 첫 번째 요청 여부 플래그
-let lastTimestamp = null; // 이전 데이터의 마지막 타임스탬프 저장
 
 // 오늘과 어제 날짜를 "YYYY-MM-DD" 형식으로 가져오는 함수
 function getTodayAndYesterdayDates() {
@@ -82,20 +81,52 @@ function filterFiveMinuteData(timestamps, prices) {
   });
   return { timestamps: filteredTimestamps, prices: filteredPrices };
 }
+const lineAnimationPlugin = {
+  id: 'lineAnimationPlugin',
+  beforeDatasetsDraw(chart, args, options) {
+    const progress = options.progress !== undefined ? options.progress : 1;
+    const chartArea = chart.chartArea;
+    if (!chartArea) return;
+    const ctxLocal = chart.ctx;
+    ctxLocal.save();
+    ctxLocal.beginPath();
+    // 차트 영역의 왼쪽부터 progress 비율만큼의 영역만 클리핑
+    ctxLocal.rect(chartArea.left, chartArea.top, chartArea.width * progress, chartArea.height);
+    ctxLocal.clip();
+  },
+  afterDatasetsDraw(chart, args, options) {
+    // 클리핑 해제
+    chart.ctx.restore();
+  }
+};
+// 플러그인 전역 등록 (Chart.js v3 이상)
+if (!Chart.registry.plugins.get('lineAnimationPlugin')) {
+  Chart.register(lineAnimationPlugin);
+}
 
 function updateChart(newData) {
-  console.log("Updating Chart with:", newData.timestamps, newData.prices);
-  const filteredData = filterTodayAndYesterdayData(newData.timestamps, newData.prices);
-
-  if (isFirstRequest) {
-    const fiveMinuteData = filterFiveMinuteData(filteredData.timestamps, filteredData.prices);
-    chartData.timestamps = fiveMinuteData.timestamps;
-    chartData.prices = fiveMinuteData.prices;
-  } else {
-    chartData.timestamps.push(...filteredData.timestamps);
-    chartData.prices.push(...filteredData.prices);
+  // newData가 넘어온 경우, chartData에 병합
+  if (newData && newData.timestamps) {
+    console.log("Updating Chart with:", newData.timestamps, newData.prices);
+    const filteredData = filterTodayAndYesterdayData(newData.timestamps, newData.prices);
+    if (isFirstRequest) {
+      const fiveMinuteData = filterFiveMinuteData(filteredData.timestamps, filteredData.prices);
+      chartData.timestamps = fiveMinuteData.timestamps;
+      chartData.prices = fiveMinuteData.prices;
+    } else {
+      chartData.timestamps.push(...filteredData.timestamps);
+      chartData.prices.push(...filteredData.prices);
+    }
+    if (newData.timestamps.length > 0) {
+      lastTimestamp = newData.timestamps[newData.timestamps.length - 1];
+    }
+    isFirstRequest = false;
   }
 
+  // 로딩이 완료되지 않았다면 실제 차트 그리기는 생략 (단, chartData는 계속 업데이트)
+  if (!loadingFinished) return;
+
+  // 차트에 그릴 데이터가 있다면 (기존 코드를 참고)
   const maxPrice = Math.max(...chartData.prices);
   const minPrice = Math.min(...chartData.prices);
   const yMin = Math.max(0, minPrice - 2000);
@@ -103,7 +134,6 @@ function updateChart(newData) {
 
   if (!myChart) {
     console.log("Initializing Chart...");
-  
     myChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -118,32 +148,28 @@ function updateChart(newData) {
       options: {
         animation: false, // 기본 애니메이션 off
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          lineAnimationPlugin: { progress: 0 } // 플러그인 초기 progress 0
         },
         scales: {
           x: {
             title: { display: true, text: '시간' },
             ticks: {
-              autoSkip: false,       // 자동 생략 끄기
-              maxRotation: 0,        // 레이블 회전 0° (수평)
-              minRotation: 0,        // 레이블 회전 0° (수평)
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0,
               callback: function(value, index, ticks) {
                 const timestamp = this.getLabelForValue(value);
                 const date = new Date(timestamp);
-                // 24시간 형식으로 표시 (hour12: false)
                 const formattedTime = date.toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                   hour12: false
                 });
-                if (index === 0) {
-                  return formattedTime;
-                }
+                if (index === 0) return formattedTime;
                 const prevTimestamp = this.getLabelForValue(ticks[index - 1].value);
                 const prevDate = new Date(prevTimestamp);
-                if (date.getHours() !== prevDate.getHours()) {
-                  return formattedTime;
-                }
+                if (date.getHours() !== prevDate.getHours()) return formattedTime;
                 return '';
               }
             }
@@ -156,45 +182,21 @@ function updateChart(newData) {
         }
       }
     });
-  
-    // 차트 레이아웃(차트 영역)이 준비되도록 업데이트
+
     myChart.update();
-  
-    // requestAnimationFrame을 이용한 클리핑 애니메이션 (좌측부터 선이 점차 나타나는 효과)
+
+    // requestAnimationFrame을 이용한 클리핑 애니메이션
     let startTime = null;
-    const duration = 2000; // 애니메이션 시간: 2000ms
-  
+    const duration = 4000; // 2000ms
     function animate(timestamp) {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1); // 0 ~ 1 사이
-  
-      const chartArea = myChart.chartArea;
-      if (!chartArea) {
-        requestAnimationFrame(animate);
-        return;
-      }
-  
-      // 캔버스 클리어 후 클리핑 영역 적용하여 그리기
-      myChart.clear();
-      const ctxLocal = myChart.ctx;
-      ctxLocal.save();
-      ctxLocal.beginPath();
-      ctxLocal.rect(chartArea.left, chartArea.top, chartArea.width * progress, chartArea.height);
-      ctxLocal.clip();
-      myChart.draw();
-      ctxLocal.restore();
-  
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        // 애니메이션 완료 후 최종 프레임 다시 그림 (클리핑 효과 제거)
-        myChart.clear();
-        myChart.draw();
-      }
+      const progress = Math.min(elapsed / duration, 1);
+      myChart.options.plugins.lineAnimationPlugin.progress = progress;
+      myChart.update('none');
+      if (progress < 1) requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
-  
   } else {
     console.log("Updating Existing Chart...");
     myChart.data.labels = chartData.timestamps;
@@ -203,7 +205,6 @@ function updateChart(newData) {
     myChart.options.scales.y.max = yMax;
     myChart.update();
   }
-  
 }
 
 // 서버에서 데이터를 가져오는 함수 (차트 업데이트용)
@@ -439,6 +440,12 @@ function stockLogo(stockName) {
   return path + (logoMapping[stockName] || "red.png");
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  // 데이터 미리 요청 (로딩 중에도 백그라운드로 데이터 수신)
+  fetchStockDataForChart();
+  fetchInterval = setInterval(fetchStockDataForChart, 300000);
+});
+
 // 로딩창 처리
 const tdV = document.getElementById('stock-name');
 function loding() {
@@ -448,10 +455,11 @@ function loding() {
     loading.style.display = "none";
     content.style.display = "block";
 
-    // 로딩이 완료된 후 차트 작업을 시작 (한 번만 실행)
+    // 로딩 완료 처리
+    loadingFinished = true;
+    // 아직 차트가 초기화되지 않았다면, 저장된 chartData를 이용해 한 번 업데이트
     if (!chartStarted) {
-      fetchStockDataForChart(); // 최초 데이터 요청
-      fetchInterval = setInterval(fetchStockDataForChart, 300000);
+      updateChart(); // newData 인자는 전달하지 않으므로, chartData만으로 차트를 그린다.
       chartStarted = true;
     }
   }
